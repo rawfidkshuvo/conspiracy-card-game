@@ -655,6 +655,7 @@ export default function ConspiracyGame() {
     );
   };
 
+  // Replace handleAction
   const handleAction = async (actionKey, targetId = null) => {
     if (!isMyTurn()) return;
     const player = getCurrentPlayer();
@@ -663,6 +664,7 @@ export default function ConspiracyGame() {
     if (player.coins < action.cost) return;
     if (player.coins >= 10 && actionKey !== "KILL")
       return alert("Must use Kill!");
+
     const actionPayload = {
       type: actionKey,
       actorId: user.uid,
@@ -672,7 +674,7 @@ export default function ConspiracyGame() {
       actionPending: false,
     };
 
-    // Immediate actions
+    // 1. EARN (Immediate)
     if (actionKey === "EARN") {
       const updatedPlayers = [...gameState.players];
       updatedPlayers[gameState.turnIndex].coins += 1;
@@ -690,6 +692,7 @@ export default function ConspiracyGame() {
       return;
     }
 
+    // 2. KILL (Immediate Deduction)
     if (actionKey === "KILL") {
       const updatedPlayers = [...gameState.players];
       updatedPlayers[gameState.turnIndex].coins -= 7;
@@ -711,6 +714,23 @@ export default function ConspiracyGame() {
       return;
     }
 
+    // 3. STAB (Immediate Deduction - NEW FIX)
+    if (actionKey === "STAB") {
+      const updatedPlayers = [...gameState.players];
+      updatedPlayers[gameState.turnIndex].coins -= 3; // Pay upfront
+
+      await updateDoc(
+        doc(db, "artifacts", appId, "public", "data", "rooms", roomId),
+        {
+          players: updatedPlayers, // Save the deduction
+          turnState: "ACTION_PENDING",
+          currentAction: actionPayload,
+        }
+      );
+      return;
+    }
+
+    // 4. ALL OTHER ACTIONS (Tax, Steal, Export, Exchange)
     await updateDoc(
       doc(db, "artifacts", appId, "public", "data", "rooms", roomId),
       {
@@ -742,6 +762,7 @@ export default function ConspiracyGame() {
   };
 
   // --- REPLACED: Confirm Action with Guard Clause ---
+  // Replace confirmAction
   const confirmAction = async () => {
     if (gameState.turnState !== "ACTION_PENDING") return;
 
@@ -751,7 +772,6 @@ export default function ConspiracyGame() {
     );
     const updatedPlayers = [...gameState.players];
     let logMsg = "";
-
     const actorIndex = updatedPlayers.findIndex((p) => p.id === actor.id);
 
     if (gameState.currentAction.type === "EXPORT") {
@@ -770,7 +790,7 @@ export default function ConspiracyGame() {
       updatedPlayers[actorIndex].coins += stolen;
       logMsg = `${actor.name} steals ${stolen} coins from ${targetName}.`;
     } else if (gameState.currentAction.type === "STAB") {
-      updatedPlayers[actorIndex].coins -= 3;
+      // FIX: Removed "coins -= 3" because it was paid upfront.
       const targetName = gameState.players.find(
         (p) => p.id === gameState.currentAction.targetId
       ).name;
@@ -782,7 +802,7 @@ export default function ConspiracyGame() {
           loserId: gameState.currentAction.targetId,
           loseReason: "stab",
           logs: arrayUnion({
-            text: `${actor.name} pays 3 coins to Assassinate ${targetName}!`,
+            text: `${actor.name} Assassinated ${targetName}!`,
             type: "danger",
           }),
         }
@@ -843,6 +863,7 @@ export default function ConspiracyGame() {
     );
   };
 
+  // Replace handleAcceptBlock
   const handleAcceptBlock = async () => {
     if (gameState.turnState !== "BLOCK_PENDING") return;
     if (gameState.currentAction.votes.includes(user.uid)) return;
@@ -850,26 +871,21 @@ export default function ConspiracyGame() {
     const livingPlayers = getActivePlayers().length;
 
     if (newVotes.length >= livingPlayers - 1) {
-      const act = gameState.currentAction;
-      let updatedPlayers = [...gameState.players];
-      if (act.type === "STAB") {
-        const actorIdx = updatedPlayers.findIndex((p) => p.id === act.actorId);
-        updatedPlayers[actorIdx].coins = Math.max(
-          0,
-          updatedPlayers[actorIdx].coins - 3
-        );
-      }
+      // Block Accepted -> Action Failed.
+      // Coins were already spent in handleAction, so they are lost.
+      // FIX: Removed the STAB deduction block entirely.
+
       await updateDoc(
         doc(db, "artifacts", appId, "public", "data", "rooms", roomId),
         {
-          players: updatedPlayers,
+          // No player changes needed, just next turn
           logs: arrayUnion({
-            text: "Block Accepted. Action Failed.",
+            text: "Block Accepted. Action Failed (Coins lost).",
             type: "info",
           }),
         }
       );
-      await nextTurn({ ...gameState, players: updatedPlayers });
+      await nextTurn({ ...gameState });
     } else {
       await updateDoc(
         doc(db, "artifacts", appId, "public", "data", "rooms", roomId),
@@ -910,6 +926,7 @@ export default function ConspiracyGame() {
   };
 
   // --- REPLACED: Surrender with Queue Stab ---
+  // Replace handleSurrender
   const handleSurrender = async () => {
     const updatedPlayers = [...gameState.players];
     const me = updatedPlayers.find((p) => p.id === user.uid);
@@ -970,7 +987,7 @@ export default function ConspiracyGame() {
           type: "success",
         });
       } else if (act.type === "STAB") {
-        updatedPlayers[actorIdx].coins -= 3;
+        // FIX: Removed "coins -= 3"
         actionPending = true;
         logs.push({
           text: `Block Failed: ${actor.name}'s Assassination proceeds!`,
@@ -1073,6 +1090,7 @@ export default function ConspiracyGame() {
   };
 
   // --- REPLACED: Resolve Challenge (No Auto Flip + Double Kill + Specific Logs) ---
+  // Replace resolveChallenge
   const resolveChallenge = async (cardIndex) => {
     const accusedPlayer = gameState.players.find((p) => p.id === user.uid);
     const revealedCard = accusedPlayer.cards[cardIndex];
@@ -1104,6 +1122,7 @@ export default function ConspiracyGame() {
       gameState.currentAction.blockerId &&
       gameState.currentAction.blockerId === gameState.accusedId;
 
+    // 1. Resolve Card Reveal
     if (hasCard) {
       nextStepLogs.push({
         text: `Challenge Failed: ${accusedPlayer.name} shows ${requiredCard}! ${challenger.name} loses a life.`,
@@ -1129,6 +1148,7 @@ export default function ConspiracyGame() {
       nextLoseReason = "challenge";
     }
 
+    // 2. Resolve Action Outcome
     const act = gameState.currentAction;
     const aIdx = updatedPlayers.findIndex((p) => p.id === act.actorId);
 
@@ -1164,7 +1184,7 @@ export default function ConspiracyGame() {
           });
         }
         if (act.type === "STAB") {
-          updatedPlayers[aIdx].coins -= 3;
+          // FIX: Removed "coins -= 3"
           actionPending = true;
           nextStepLogs.push({
             text: "Block Invalid: Stab proceeds! (Double Kill pending)",
@@ -1184,7 +1204,7 @@ export default function ConspiracyGame() {
           updatedPlayers[aIdx].coins += s;
         }
         if (act.type === "STAB") {
-          updatedPlayers[aIdx].coins -= 3;
+          // FIX: Removed "coins -= 3"
           actionPending = true;
         }
         if (act.type === "EXCHANGE") actionPending = true;
@@ -1201,6 +1221,7 @@ export default function ConspiracyGame() {
       }
     }
 
+    // 3. Save
     const isGameOver = checkGameOver(updatedPlayers);
     let updateData = {
       players: updatedPlayers,
