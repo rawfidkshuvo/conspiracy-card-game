@@ -31,7 +31,7 @@ import {
   BookOpen,
   X,
   LogOut,
-  Info, // Added Info icon [cite: 4]
+  Info,
 } from "lucide-react";
 
 // --- Firebase Config & Init ---
@@ -50,7 +50,7 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 
 const appId =
-  typeof __app_id !== "undefined" ? __app_id : "conspiracy-game-v6-fixed";
+  typeof __app_id !== "undefined" ? __app_id : "conspiracy-game-v8-final";
 
 // --- Game Constants ---
 const CARDS = {
@@ -111,7 +111,7 @@ const ACTIONS = {
     blockedBy: ["HERO"],
   },
   TAX: {
-    name: "Tax",
+    name: "Hero Bonus", // Renamed from Tax
     cost: 0,
     income: 3,
     blockable: false,
@@ -188,7 +188,6 @@ const RulesModal = ({ onClose }) => {
   return (
     <div className="fixed inset-0 bg-black/90 z-[100] flex items-center justify-center p-4">
       <div className="bg-gray-900 rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden border border-gray-700 shadow-2xl flex flex-col">
-        {/* Header */}
         <div className="p-6 border-b border-gray-700 flex justify-between items-center bg-gray-800">
           <h2 className="text-2xl font-bold text-white flex items-center gap-2">
             <BookOpen className="text-purple-400" /> How to Play
@@ -201,7 +200,6 @@ const RulesModal = ({ onClose }) => {
           </button>
         </div>
 
-        {/* Tabs */}
         <div className="flex gap-2 p-4 bg-gray-900 border-b border-gray-800 overflow-x-auto">
           <TabButton id="basics" label="The Basics" icon={Coins} />
           <TabButton id="cards" label="Characters" icon={Crown} />
@@ -209,7 +207,6 @@ const RulesModal = ({ onClose }) => {
           <TabButton id="challenges" label="Bluffing" icon={XCircle} />
         </div>
 
-        {/* Content */}
         <div className="p-6 overflow-y-auto flex-1 text-gray-300 space-y-6">
           {tab === "basics" && (
             <div className="space-y-4 animate-in fade-in">
@@ -218,21 +215,16 @@ const RulesModal = ({ onClose }) => {
               </h3>
               <ul className="list-disc pl-5 space-y-2">
                 <li>
-                  Each player starts with <strong>2 Cards</strong> (Influences)
-                  and <strong>2 Coins</strong>.
+                  Each player starts with <strong>2/3 Cards</strong> and{" "}
+                  <strong>2 Coins</strong>.
                 </li>
                 <li>
                   Your cards are kept face-down. No one sees them but you.
                 </li>
+                <li>If you lose a life, you must flip one card face-up.</li>
                 <li>
-                  If you lose a life (from a Coup, Assassination, or failed
-                  Challenge), you must flip one card face-up.
+                  If all cards are face-up, you are <strong>Eliminated</strong>.
                 </li>
-                <li>
-                  If both your cards are face-up, you are{" "}
-                  <strong>Eliminated</strong>.
-                </li>
-                <li>The last player with at least one face-down card wins.</li>
               </ul>
             </div>
           )}
@@ -261,23 +253,23 @@ const RulesModal = ({ onClose }) => {
               <div className="p-4 bg-gray-800 rounded-lg border-l-4 border-green-500">
                 <h4 className="font-bold text-white">General Actions (Safe)</h4>
                 <p className="text-sm">
-                  <strong>Earn:</strong> Take 1 coin. (Cannot be blocked).
+                  <strong>Earn:</strong> Take 1 coin.
                 </p>
                 <p className="text-sm">
-                  <strong>Kill (Coup):</strong> Pay 7 coins. Choose a player to
-                  lose a life immediately. (Unblockable).
+                  <strong>Export:</strong> Take 2 coin.
+                </p>
+                <p className="text-sm">
+                  <strong>Kill (Coup):</strong> Pay 7 coins to kill someone
+                  immediately.
                 </p>
               </div>
               <div className="p-4 bg-gray-800 rounded-lg border-l-4 border-yellow-500">
                 <h4 className="font-bold text-white">
                   Character Actions (Blockable/Challengeable)
                 </h4>
-                <p className="text-sm mb-2">
-                  You can claim to have a character to use their action:
-                </p>
                 <ul className="list-disc pl-5 text-sm space-y-1">
                   <li>
-                    <strong>Tax (Hero):</strong> Take 3 coins.
+                    <strong>Hero Bonus (Hero):</strong> Take 3 coins.
                   </li>
                   <li>
                     <strong>Steal (Robber):</strong> Take 2 coins from another
@@ -288,8 +280,8 @@ const RulesModal = ({ onClose }) => {
                     lose a life.
                   </li>
                   <li>
-                    <strong>Exchange (Riddler):</strong> Draw 2 cards, return 2
-                    cards.
+                    <strong>Exchange (Riddler):</strong> Draw 2 cards, return
+                    any 2 cards.
                   </li>
                 </ul>
               </div>
@@ -303,48 +295,29 @@ const RulesModal = ({ onClose }) => {
                   The Art of Lying
                 </h3>
                 <p>
-                  You don't need the card to do the action! If you don't have a{" "}
-                  <strong>Hero</strong>, you can still say "I am using Tax" to
-                  get 3 coins. This is a bluff.
+                  You can claim any character! If you don't have a Hero, you can
+                  still use "Hero Bonus" to get 3 coins. But beware...
                 </p>
               </div>
               <div className="grid md:grid-cols-2 gap-6">
                 <div className="bg-red-900/20 p-4 rounded-lg border border-red-500/50">
                   <h4 className="font-bold text-white mb-2">Challenging</h4>
-                  <p className="text-sm">
-                    If an opponent thinks you are lying, they can{" "}
-                    <strong>CHALLENGE</strong> you.
-                  </p>
+                  <p className="text-sm">If someone challenges you:</p>
                   <ul className="list-disc pl-5 text-sm mt-2 space-y-1">
                     <li>
-                      If you <strong>have</strong> the card: You show it. The
-                      challenger loses a life. You shuffle your card and draw a
-                      new one.
+                      <strong>Have it?</strong> Show it. They lose a life. You
+                      get a new card.
                     </li>
                     <li>
-                      If you <strong>don't</strong> have the card: You lose a
-                      life.
+                      <strong>Don't have it?</strong> You lose a life.
                     </li>
                   </ul>
                 </div>
                 <div className="bg-blue-900/20 p-4 rounded-lg border border-blue-500/50">
                   <h4 className="font-bold text-white mb-2">Blocking</h4>
                   <p className="text-sm">
-                    You can claim a character to block attacks.
-                  </p>
-                  <ul className="list-disc pl-5 text-sm mt-2 space-y-1">
-                    <li>
-                      <strong>Hero</strong> blocks Foreign Aid.
-                    </li>
-                    <li>
-                      <strong>Genie</strong> blocks Stab (Assassination).
-                    </li>
-                    <li>
-                      <strong>Robber/Riddler</strong> blocks Steal.
-                    </li>
-                  </ul>
-                  <p className="text-xs mt-2 text-blue-300">
-                    Blocks can also be Challenged!
+                    You can claim a character to block attacks (e.g., Genie
+                    blocks Stab).
                   </p>
                 </div>
               </div>
@@ -398,6 +371,7 @@ export default function ConspiracyGame() {
   const [joinPassword, setJoinPassword] = useState("");
   const [createPassword, setCreatePassword] = useState("");
   const [maxPlayers, setMaxPlayers] = useState(4);
+  const [startingCards, setStartingCards] = useState(2);
   const [roomId, setRoomId] = useState(null);
   const [gameState, setGameState] = useState(null);
   const [error, setError] = useState("");
@@ -405,7 +379,7 @@ export default function ConspiracyGame() {
   const [exchangeSelection, setExchangeSelection] = useState([]);
   const [showRules, setShowRules] = useState(false);
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
-  const [showLogHistory, setShowLogHistory] = useState(false); // New State for Log Modal
+  const [showLogHistory, setShowLogHistory] = useState(false);
 
   useEffect(() => {
     const initAuth = async () => {
@@ -459,6 +433,7 @@ export default function ConspiracyGame() {
       hostId: user.uid,
       password: createPassword,
       maxPlayers: parseInt(maxPlayers),
+      startingCards: parseInt(startingCards), // <--- ADD THIS LINE
       players: [
         {
           id: user.uid,
@@ -533,27 +508,19 @@ export default function ConspiracyGame() {
     if (!roomId || !user || !gameState) return;
     const updatedPlayers = gameState.players.filter((p) => p.id !== user.uid);
     let status = gameState.status;
-    if (status === "playing" && updatedPlayers.length < 2) {
-      status = "finished";
-    }
+    if (status === "playing" && updatedPlayers.length < 2) status = "finished";
 
     const myIndex = gameState.players.findIndex((p) => p.id === user.uid);
     let newTurnIndex = gameState.turnIndex;
-    if (myIndex < gameState.turnIndex) {
+    if (myIndex < gameState.turnIndex)
       newTurnIndex = Math.max(0, newTurnIndex - 1);
-    }
-    if (newTurnIndex >= updatedPlayers.length) {
-      newTurnIndex = 0;
-    }
+    if (newTurnIndex >= updatedPlayers.length) newTurnIndex = 0;
 
     const logs = [...(gameState.logs || [])];
     const me = gameState.players.find((p) => p.id === user.uid);
-    if (me) {
-      logs.push({ text: `${me.name} left the game.`, type: "danger" });
-    }
-    if (status === "finished" && gameState.status === "playing") {
+    if (me) logs.push({ text: `${me.name} left the game.`, type: "danger" });
+    if (status === "finished" && gameState.status === "playing")
       logs.push({ text: "Not enough players. Game Over.", type: "neutral" });
-    }
 
     try {
       await updateDoc(
@@ -568,7 +535,6 @@ export default function ConspiracyGame() {
     } catch (e) {
       console.error("Error leaving room", e);
     }
-
     setRoomId(null);
     setView("menu");
     setShowLeaveConfirm(false);
@@ -577,17 +543,21 @@ export default function ConspiracyGame() {
   const startGame = async () => {
     if (!gameState || gameState.hostId !== user.uid) return;
     if (gameState.players.length < 2) return setError("Need 2+ players.");
-
     const deck = shuffle([...DECK_TEMPLATE, ...DECK_TEMPLATE]);
-    const players = gameState.players.map((p) => ({
-      ...p,
-      coins: 2,
-      cards: [
-        { type: deck.pop(), flipped: false },
-        { type: deck.pop(), flipped: false },
-      ],
-      isEliminated: false,
-    }));
+    const handSize = gameState.startingCards || 2;
+
+    const players = gameState.players.map((p) => {
+      const hand = [];
+      for (let i = 0; i < handSize; i++) {
+        hand.push({ type: deck.pop(), flipped: false });
+      }
+      return {
+        ...p,
+        coins: 2,
+        cards: hand,
+        isEliminated: false,
+      };
+    });
     await updateDoc(
       doc(db, "artifacts", appId, "public", "data", "rooms", roomId),
       {
@@ -623,15 +593,21 @@ export default function ConspiracyGame() {
   const restartGame = async () => {
     if (!gameState || gameState.hostId !== user.uid) return;
     const deck = shuffle([...DECK_TEMPLATE, ...DECK_TEMPLATE]);
-    const players = gameState.players.map((p) => ({
-      ...p,
-      coins: 2,
-      cards: [
-        { type: deck.pop(), flipped: false },
-        { type: deck.pop(), flipped: false },
-      ],
-      isEliminated: false,
-    }));
+    const handSize = gameState.startingCards || 2;
+
+    const players = gameState.players.map((p) => {
+      const hand = [];
+      for (let i = 0; i < handSize; i++) {
+        hand.push({ type: deck.pop(), flipped: false });
+      }
+      return {
+        ...p,
+        coins: 2,
+        cards: hand,
+        isEliminated: false,
+      };
+    });
+
     await updateDoc(
       doc(db, "artifacts", appId, "public", "data", "rooms", roomId),
       {
@@ -645,7 +621,6 @@ export default function ConspiracyGame() {
       }
     );
   };
-
   // --- Game Logic ---
   const getActivePlayers = () =>
     gameState?.players.filter((p) => !p.isEliminated) || [];
@@ -665,10 +640,8 @@ export default function ConspiracyGame() {
       nextIndex = (nextIndex + 1) % currentRoomState.players.length;
       checks++;
     }
-
-    if (checks >= 10) {
+    if (checks >= 10)
       nextIndex = currentRoomState.players.findIndex((p) => !p.isEliminated);
-    }
 
     await updateDoc(
       doc(db, "artifacts", appId, "public", "data", "rooms", roomId),
@@ -677,7 +650,7 @@ export default function ConspiracyGame() {
         turnState: "IDLE",
         currentAction: null,
         players: currentRoomState.players,
-        loseReason: null, // Reset reason on new turn
+        loseReason: null,
       }
     );
   };
@@ -698,6 +671,7 @@ export default function ConspiracyGame() {
       votes: [],
       actionPending: false,
     };
+
     // Immediate actions
     if (actionKey === "EARN") {
       const updatedPlayers = [...gameState.players];
@@ -716,7 +690,6 @@ export default function ConspiracyGame() {
       return;
     }
 
-    // Coup is special: Immediate cost, unblockable, unchallengeable
     if (actionKey === "KILL") {
       const updatedPlayers = [...gameState.players];
       updatedPlayers[gameState.turnIndex].coins -= 7;
@@ -728,7 +701,7 @@ export default function ConspiracyGame() {
           turnState: "LOSE_CARD",
           currentAction: actionPayload,
           loserId: targetId,
-          loseReason: "kill", // Added
+          loseReason: "kill",
           logs: arrayUnion({
             text: `${player.name} killed ${targetName} (-7 coins).`,
             type: "danger",
@@ -738,7 +711,6 @@ export default function ConspiracyGame() {
       return;
     }
 
-    // All other actions go to voting phase
     await updateDoc(
       doc(db, "artifacts", appId, "public", "data", "rooms", roomId),
       {
@@ -748,19 +720,15 @@ export default function ConspiracyGame() {
     );
   };
 
+  // --- REPLACED: Priority Logic ---
   const handlePass = async () => {
-    // --- BUG FIX START ---
-    // Strictly ensure we are in voting mode. If a Challenge or Block happened, STOP.
     if (gameState.turnState !== "ACTION_PENDING") return;
-    // --- BUG FIX END ---
-
     if (!gameState.currentAction) return;
     if (gameState.currentAction.votes.includes(user.uid)) return;
 
     const newVotes = [...gameState.currentAction.votes, user.uid];
     const livingPlayers = getActivePlayers().length;
 
-    // Everyone else has passed?
     if (newVotes.length >= livingPlayers - 1) {
       await confirmAction();
     } else {
@@ -773,38 +741,36 @@ export default function ConspiracyGame() {
     }
   };
 
-  // Find and replace the entire 'confirmAction' function
+  // --- REPLACED: Confirm Action with Guard Clause ---
   const confirmAction = async () => {
-    // --- FIX: GUARD CLAUSE ---
-    // If the state has changed (e.g., someone clicked Challenge or Block),
-    // STOP immediately. Do not award coins.
     if (gameState.turnState !== "ACTION_PENDING") return;
 
     const action = ACTIONS[gameState.currentAction.type];
-    const actorIndex = gameState.players.findIndex(
+    const actor = gameState.players.find(
       (p) => p.id === gameState.currentAction.actorId
     );
     const updatedPlayers = [...gameState.players];
-    let logMsg = `${updatedPlayers[actorIndex].name} performs ${action.name}`;
+    let logMsg = "";
 
-    // Apply effects
+    const actorIndex = updatedPlayers.findIndex((p) => p.id === actor.id);
+
     if (gameState.currentAction.type === "EXPORT") {
       updatedPlayers[actorIndex].coins += 2;
-      logMsg += " (+2 coins).";
+      logMsg = `${actor.name} completes Export and gains 2 coins.`;
     } else if (gameState.currentAction.type === "TAX") {
       updatedPlayers[actorIndex].coins += 3;
-      logMsg += " (+3 coins).";
+      logMsg = `${actor.name} collects Hero Bonus and gains 3 coins.`;
     } else if (gameState.currentAction.type === "STEAL") {
       const targetIndex = updatedPlayers.findIndex(
         (p) => p.id === gameState.currentAction.targetId
       );
+      const targetName = updatedPlayers[targetIndex].name;
       const stolen = Math.min(updatedPlayers[targetIndex].coins, 2);
       updatedPlayers[targetIndex].coins -= stolen;
       updatedPlayers[actorIndex].coins += stolen;
-      logMsg += ` on ${updatedPlayers[targetIndex].name} (stole ${stolen}).`;
+      logMsg = `${actor.name} steals ${stolen} coins from ${targetName}.`;
     } else if (gameState.currentAction.type === "STAB") {
       updatedPlayers[actorIndex].coins -= 3;
-      // Pay for assassination
       const targetName = gameState.players.find(
         (p) => p.id === gameState.currentAction.targetId
       ).name;
@@ -816,7 +782,7 @@ export default function ConspiracyGame() {
           loserId: gameState.currentAction.targetId,
           loseReason: "stab",
           logs: arrayUnion({
-            text: `${updatedPlayers[actorIndex].name} assassinates ${targetName} (-3 coins).`,
+            text: `${actor.name} pays 3 coins to Assassinate ${targetName}!`,
             type: "danger",
           }),
         }
@@ -824,9 +790,7 @@ export default function ConspiracyGame() {
       return;
     } else if (gameState.currentAction.type === "EXCHANGE") {
       const deck = [...gameState.deck];
-      if (deck.length < 2) {
-        deck.push(...DECK_TEMPLATE);
-      }
+      if (deck.length < 2) deck.push(...DECK_TEMPLATE);
       const newCards = [deck.pop(), deck.pop()];
       await updateDoc(
         doc(db, "artifacts", appId, "public", "data", "rooms", roomId),
@@ -835,7 +799,7 @@ export default function ConspiracyGame() {
           deck,
           tempCards: newCards,
           logs: arrayUnion({
-            text: `${updatedPlayers[actorIndex].name} exchanges cards.`,
+            text: `${actor.name} examines the deck (Exchange).`,
             type: "neutral",
           }),
         }
@@ -853,7 +817,14 @@ export default function ConspiracyGame() {
     await nextTurn({ ...gameState, players: updatedPlayers });
   };
 
+  // --- REPLACED: Handle Block with Specific Logs ---
   const handleBlock = async (blockerId, claimCard) => {
+    const blockerName = gameState.players.find((p) => p.id === blockerId).name;
+    const actorName = gameState.players.find(
+      (p) => p.id === gameState.currentAction.actorId
+    ).name;
+    const actionName = ACTIONS[gameState.currentAction.type].name;
+
     await updateDoc(
       doc(db, "artifacts", appId, "public", "data", "rooms", roomId),
       {
@@ -865,9 +836,7 @@ export default function ConspiracyGame() {
           votes: [],
         },
         logs: arrayUnion({
-          text: `${
-            gameState.players.find((p) => p.id === blockerId).name
-          } blocks with ${claimCard}!`,
+          text: `${blockerName} blocks ${actorName}'s ${actionName} claiming ${claimCard}!`,
           type: "warning",
         }),
       }
@@ -881,10 +850,8 @@ export default function ConspiracyGame() {
     const livingPlayers = getActivePlayers().length;
 
     if (newVotes.length >= livingPlayers - 1) {
-      // BLOCK ACCEPTED
       const act = gameState.currentAction;
       let updatedPlayers = [...gameState.players];
-
       if (act.type === "STAB") {
         const actorIdx = updatedPlayers.findIndex((p) => p.id === act.actorId);
         updatedPlayers[actorIdx].coins = Math.max(
@@ -892,7 +859,6 @@ export default function ConspiracyGame() {
           updatedPlayers[actorIdx].coins - 3
         );
       }
-
       await updateDoc(
         doc(db, "artifacts", appId, "public", "data", "rooms", roomId),
         {
@@ -903,7 +869,6 @@ export default function ConspiracyGame() {
           }),
         }
       );
-
       await nextTurn({ ...gameState, players: updatedPlayers });
     } else {
       await updateDoc(
@@ -915,6 +880,7 @@ export default function ConspiracyGame() {
     }
   };
 
+  // --- REPLACED: Challenge with Specific Logs ---
   const handleChallenge = async (challengerId) => {
     const isChallengingBlock = gameState.turnState === "BLOCK_PENDING";
     const accusedId = isChallengingBlock
@@ -923,6 +889,11 @@ export default function ConspiracyGame() {
     const claim = isChallengingBlock
       ? gameState.currentAction.blockClaim
       : ACTIONS[gameState.currentAction.type].claim;
+    const challengerName = gameState.players.find(
+      (p) => p.id === challengerId
+    ).name;
+    const accusedName = gameState.players.find((p) => p.id === accusedId).name;
+
     await updateDoc(
       doc(db, "artifacts", appId, "public", "data", "rooms", roomId),
       {
@@ -930,12 +901,15 @@ export default function ConspiracyGame() {
         challengerId,
         accusedId,
         challengedCard: claim,
+        logs: arrayUnion({
+          text: `${challengerName} challenges ${accusedName}'s claim of ${claim}!`,
+          type: "danger",
+        }),
       }
     );
   };
 
-  // Find and replace the entire 'handleSurrender' function
-  // Replace the entire handleSurrender function
+  // --- REPLACED: Surrender with Queue Stab ---
   const handleSurrender = async () => {
     const updatedPlayers = [...gameState.players];
     const me = updatedPlayers.find((p) => p.id === user.uid);
@@ -943,19 +917,32 @@ export default function ConspiracyGame() {
     const activeCards = me.cards
       .map((c, i) => ({ ...c, index: i }))
       .filter((c) => !c.flipped);
+    const actor = gameState.players.find(
+      (p) => p.id === gameState.currentAction.actorId
+    );
 
-    let logs = [{ text: `${me.name} surrendered.`, type: "danger" }];
+    let targetName = "";
+    if (gameState.currentAction.targetId) {
+      const t = gameState.players.find(
+        (p) => p.id === gameState.currentAction.targetId
+      );
+      targetName = t ? t.name : "Target";
+    }
+
+    let logs = [];
     let actionPending = false;
     let nextState = "IDLE";
     let nextLoserId = null;
     let nextLoseReason = null;
 
-    // Check if the person surrendering is the Blocker
     const isBlockerSurrendering =
       gameState.currentAction.blockerId === user.uid;
 
     if (isBlockerSurrendering) {
-      // === BLOCKER GAVE UP -> ACTION SUCCEEDS ===
+      logs.push({
+        text: `Blocker ${me.name} admits to lying! Block removed.`,
+        type: "danger",
+      });
       const act = gameState.currentAction;
       const actorIdx = updatedPlayers.findIndex((p) => p.id === act.actorId);
 
@@ -966,43 +953,53 @@ export default function ConspiracyGame() {
         const stolen = Math.min(updatedPlayers[targetIdx].coins, 2);
         updatedPlayers[targetIdx].coins -= stolen;
         updatedPlayers[actorIdx].coins += stolen;
-        logs.push({ text: "Block failed. Steal succeeds!", type: "danger" });
+        logs.push({
+          text: `Block Failed: ${actor.name} steals ${stolen} from ${targetName}.`,
+          type: "success",
+        });
       } else if (act.type === "EXPORT") {
         updatedPlayers[actorIdx].coins += 2;
         logs.push({
-          text: "Block failed. Export succeeds (+2 coins)!",
+          text: `Block Failed: ${actor.name} gains 2 coins (Export).`,
           type: "success",
         });
       } else if (act.type === "TAX") {
-        // Rare case if tax is blocked?
         updatedPlayers[actorIdx].coins += 3;
-        logs.push({ text: "Block failed. Tax succeeds!", type: "success" });
+        logs.push({
+          text: `Block Failed: ${actor.name} gains 3 coins (Hero Bonus).`,
+          type: "success",
+        });
       } else if (act.type === "STAB") {
         updatedPlayers[actorIdx].coins -= 3;
-        nextState = "LOSE_CARD";
-        nextLoserId = act.targetId;
-        nextLoseReason = "stab";
-        logs.push({ text: "Block failed. Stab succeeds!", type: "danger" });
+        actionPending = true;
+        logs.push({
+          text: `Block Failed: ${actor.name}'s Assassination proceeds!`,
+          type: "danger",
+        });
       } else if (act.type === "EXCHANGE") {
         actionPending = true;
-        logs.push({ text: "Block failed. Exchange proceeds.", type: "info" });
+        logs.push({
+          text: `Block Failed: ${actor.name} proceeds with Exchange.`,
+          type: "info",
+        });
       }
     } else {
-      // === ACTOR GAVE UP -> ACTION FAILS ===
-      logs.push({ text: "Action caught! Turn ends.", type: "info" });
+      logs.push({
+        text: `Actor ${me.name} admits to lying! Action cancelled.`,
+        type: "danger",
+      });
     }
 
-    // Lose Life Logic
     if (activeCards.length === 1) {
       updatedPlayers[myIdx].cards[activeCards[0].index].flipped = true;
       updatedPlayers[myIdx].isEliminated = true;
+      logs.push({ text: `${me.name} is ELIMINATED!`, type: "danger" });
     } else {
       nextState = "LOSE_CARD";
       nextLoserId = user.uid;
       nextLoseReason = "challenge";
     }
 
-    // Update Database
     const isGameOver = checkGameOver(updatedPlayers);
     let updateData = {
       players: updatedPlayers,
@@ -1010,8 +1007,9 @@ export default function ConspiracyGame() {
       "currentAction.actionPending": actionPending,
     };
 
-    if (isGameOver) updateData.status = "finished";
-    else if (nextState === "LOSE_CARD") {
+    if (isGameOver) {
+      updateData.status = "finished";
+    } else if (nextState === "LOSE_CARD") {
       updateData.turnState = "LOSE_CARD";
       updateData.loserId = nextLoserId;
       if (nextLoseReason) updateData.loseReason = nextLoseReason;
@@ -1021,34 +1019,78 @@ export default function ConspiracyGame() {
       doc(db, "artifacts", appId, "public", "data", "rooms", roomId),
       updateData
     );
+    if (isGameOver) return;
+    if (nextState === "LOSE_CARD") return;
 
-    if (isGameOver || nextState === "LOSE_CARD") return;
-
-    if (actionPending && gameState.currentAction.type === "EXCHANGE") {
-      const deck = [...gameState.deck];
-      const newCards = [deck.pop(), deck.pop()];
-      await updateDoc(
-        doc(db, "artifacts", appId, "public", "data", "rooms", roomId),
-        {
-          turnState: "EXCHANGE_SELECT",
-          deck,
-          tempCards: newCards,
-          "currentAction.actionPending": false,
+    if (actionPending) {
+      if (gameState.currentAction.type === "STAB") {
+        const act = gameState.currentAction;
+        const targetP = updatedPlayers.find((p) => p.id === act.targetId);
+        if (targetP && !targetP.isEliminated) {
+          await updateDoc(
+            doc(db, "artifacts", appId, "public", "data", "rooms", roomId),
+            {
+              turnState: "LOSE_CARD",
+              loserId: act.targetId,
+              loseReason: "stab",
+              "currentAction.actionPending": false,
+              logs: arrayUnion({
+                text: "Assassination continues... Target must lose a life.",
+                type: "danger",
+              }),
+            }
+          );
+          return;
+        } else {
+          await updateDoc(
+            doc(db, "artifacts", appId, "public", "data", "rooms", roomId),
+            {
+              logs: arrayUnion({
+                text: "Target eliminated. Assassination complete.",
+                type: "neutral",
+              }),
+            }
+          );
+          await nextTurn({ ...gameState, players: updatedPlayers });
+          return;
         }
-      );
-    } else {
-      await nextTurn({ ...gameState, players: updatedPlayers });
+      } else if (gameState.currentAction.type === "EXCHANGE") {
+        const deck = [...gameState.deck];
+        const newCards = [deck.pop(), deck.pop()];
+        await updateDoc(
+          doc(db, "artifacts", appId, "public", "data", "rooms", roomId),
+          {
+            turnState: "EXCHANGE_SELECT",
+            deck,
+            tempCards: newCards,
+            "currentAction.actionPending": false,
+          }
+        );
+        return;
+      }
     }
+    await nextTurn({ ...gameState, players: updatedPlayers });
   };
 
-  // Find and replace the entire 'resolveChallenge' function
-  //
-  // Replace the entire resolveChallenge function
+  // --- REPLACED: Resolve Challenge (No Auto Flip + Double Kill + Specific Logs) ---
   const resolveChallenge = async (cardIndex) => {
     const accusedPlayer = gameState.players.find((p) => p.id === user.uid);
     const revealedCard = accusedPlayer.cards[cardIndex];
     const requiredCard = gameState.challengedCard;
     const hasCard = revealedCard.type === requiredCard;
+
+    const actor = gameState.players.find(
+      (p) => p.id === gameState.currentAction.actorId
+    );
+    const challenger = gameState.players.find(
+      (p) => p.id === gameState.challengerId
+    );
+    let targetName = "";
+    if (gameState.currentAction.targetId) {
+      targetName = gameState.players.find(
+        (p) => p.id === gameState.currentAction.targetId
+      ).name;
+    }
 
     let updatedPlayers = [...gameState.players];
     let newDeck = [...gameState.deck];
@@ -1058,23 +1100,15 @@ export default function ConspiracyGame() {
     let nextLoseReason = null;
     let actionPending = false;
 
-    // --- 1. DETERMINE CONTEXT ---
-    // If the person accused is the Blocker, we are resolving a Block Challenge.
-    // If the person accused is the Actor, we are resolving an Action Challenge.
-    // This fixes the "Reverse Coin" bug.
     const isBlockChallenge =
       gameState.currentAction.blockerId &&
       gameState.currentAction.blockerId === gameState.accusedId;
 
-    // --- 2. HANDLE CARD REVEAL (Winner/Loser) ---
     if (hasCard) {
-      // --- CHALLENGE FAILED (Accused told truth) ---
       nextStepLogs.push({
-        text: `Challenge Failed! ${accusedPlayer.name} had ${requiredCard}.`,
+        text: `Challenge Failed: ${accusedPlayer.name} shows ${requiredCard}! ${challenger.name} loses a life.`,
         type: "success",
       });
-
-      // Shuffle card back into deck and draw a new one
       newDeck.push(revealedCard.type);
       newDeck = shuffle(newDeck);
       const pIdx = updatedPlayers.findIndex((p) => p.id === user.uid);
@@ -1082,52 +1116,33 @@ export default function ConspiracyGame() {
         type: newDeck.pop(),
         flipped: false,
       };
-
-      // Challenger loses a life
       nextState = "LOSE_CARD";
       nextLoserId = gameState.challengerId;
       nextLoseReason = "challenge";
     } else {
-      // --- CHALLENGE WON (Accused lied) ---
       nextStepLogs.push({
-        text: `Challenge Won! ${accusedPlayer.name} caught lying!`,
+        text: `Challenge Won: ${accusedPlayer.name} caught lying! Choose a card to lose.`,
         type: "danger",
       });
-
-      // Accused loses a life
-      const pIdx = updatedPlayers.findIndex((p) => p.id === user.uid);
-      updatedPlayers[pIdx].cards[cardIndex].flipped = true;
-
-      if (updatedPlayers[pIdx].cards.every((c) => c.flipped)) {
-        updatedPlayers[pIdx].isEliminated = true;
-      }
+      nextState = "LOSE_CARD";
+      nextLoserId = user.uid;
+      nextLoseReason = "challenge";
     }
 
-    // --- 3. HANDLE ACTION CONSEQUENCES (Coins/Effect) ---
     const act = gameState.currentAction;
     const aIdx = updatedPlayers.findIndex((p) => p.id === act.actorId);
 
     if (isBlockChallenge) {
-      // === WE ARE RESOLVING A BLOCK ===
       if (hasCard) {
-        // Scenario: Blocker had the card (Block Valid).
-        // Result: BLOCK SUCCEEDS. Action FAILS. Actor gets NOTHING.
         nextStepLogs.push({
-          text: "Block Valid. Action stopped.",
+          text: `Block Upheld. ${actor.name}'s action blocked.`,
           type: "warning",
         });
-
-        // Special Case: If it was a STAB, the Assassin effectively wasted the turn.
-        // (We don't refund the coins here usually, or we assume they weren't spent yet.
-        // Current logic assumes they weren't spent).
       } else {
-        // Scenario: Blocker Lied (Block Invalid).
-        // Result: BLOCK FAILS. Action SUCCEEDS. Actor GETS COINS/EFFECT.
-
         if (act.type === "TAX") {
           updatedPlayers[aIdx].coins += 3;
           nextStepLogs.push({
-            text: "Block Invalid: Tax succeeds (+3).",
+            text: "Block Invalid: Hero Bonus succeeds (+3).",
             type: "success",
           });
         }
@@ -1150,70 +1165,42 @@ export default function ConspiracyGame() {
         }
         if (act.type === "STAB") {
           updatedPlayers[aIdx].coins -= 3;
-          // IMPORTANT: Trigger the Stab effect logic after the challenge penalty
           actionPending = true;
           nextStepLogs.push({
-            text: "Block Invalid: Stab succeeds.",
+            text: "Block Invalid: Stab proceeds! (Double Kill pending)",
             type: "danger",
           });
         }
-        if (act.type === "EXCHANGE") {
-          actionPending = true;
-        }
+        if (act.type === "EXCHANGE") actionPending = true;
       }
     } else {
-      // === WE ARE RESOLVING AN ACTION (e.g. Tax/Steal challenged directly) ===
       if (hasCard) {
-        // Scenario: Actor had the card.
-        // Result: ACTION SUCCEEDS. Actor GETS COINS/EFFECT.
-
-        if (act.type === "TAX") {
-          updatedPlayers[aIdx].coins += 3;
-          nextStepLogs.push({
-            text: "Challenge Failed: Tax proceeds (+3).",
-            type: "success",
-          });
-        }
-        if (act.type === "EXPORT") {
-          updatedPlayers[aIdx].coins += 2;
-          nextStepLogs.push({
-            text: "Challenge Failed: Export proceeds (+2).",
-            type: "success",
-          });
-        }
+        if (act.type === "TAX") updatedPlayers[aIdx].coins += 3;
+        if (act.type === "EXPORT") updatedPlayers[aIdx].coins += 2;
         if (act.type === "STEAL") {
           const tIdx = updatedPlayers.findIndex((p) => p.id === act.targetId);
           const s = Math.min(updatedPlayers[tIdx].coins, 2);
           updatedPlayers[tIdx].coins -= s;
           updatedPlayers[aIdx].coins += s;
-          nextStepLogs.push({
-            text: `Challenge Failed: Steal proceeds (+${s}).`,
-            type: "success",
-          });
         }
         if (act.type === "STAB") {
           updatedPlayers[aIdx].coins -= 3;
-          // IMPORTANT: Trigger the Stab effect logic after the challenge penalty
           actionPending = true;
+        }
+        if (act.type === "EXCHANGE") actionPending = true;
+        if (!actionPending)
           nextStepLogs.push({
-            text: "Challenge Failed: Stab proceeds.",
-            type: "danger",
+            text: "Action Upheld: Success.",
+            type: "success",
           });
-        }
-        if (act.type === "EXCHANGE") {
-          actionPending = true;
-        }
       } else {
-        // Scenario: Actor Lied.
-        // Result: ACTION FAILS. Actor gets NOTHING.
         nextStepLogs.push({
-          text: "Action Invalid due to bluff.",
+          text: "Action Failed: Bluff called.",
           type: "warning",
         });
       }
     }
 
-    // --- 4. SAVE TO DB ---
     const isGameOver = checkGameOver(updatedPlayers);
     let updateData = {
       players: updatedPlayers,
@@ -1234,10 +1221,8 @@ export default function ConspiracyGame() {
       doc(db, "artifacts", appId, "public", "data", "rooms", roomId),
       updateData
     );
-
     if (isGameOver || nextState === "LOSE_CARD") return;
 
-    // Handle Exchange Continuation (Immediate)
     if (actionPending && gameState.currentAction.type === "EXCHANGE") {
       const d = [...newDeck];
       const nc = [d.pop(), d.pop()];
@@ -1254,30 +1239,29 @@ export default function ConspiracyGame() {
       await nextTurn({ ...gameState, players: updatedPlayers });
     }
   };
+
+  // --- REPLACED: Lose Life (Double Kill Trigger) ---
   const loseLife = async (cardIndex) => {
     if (gameState.loserId !== user.uid) return;
     const updatedPlayers = [...gameState.players];
     const pIdx = updatedPlayers.findIndex((p) => p.id === user.uid);
-
     if (updatedPlayers[pIdx].cards[cardIndex].flipped) return;
 
-    // 1. Flip the card (Pay the Life)
     updatedPlayers[pIdx].cards[cardIndex].flipped = true;
     const isEliminated = updatedPlayers[pIdx].cards.every((c) => c.flipped);
     if (isEliminated) updatedPlayers[pIdx].isEliminated = true;
 
     const logEntries = [
       {
-        text: `${updatedPlayers[pIdx].name} lost a life.`,
+        text: `${updatedPlayers[pIdx].name} lost a life (${gameState.loseReason}).`,
         type: "danger",
       },
     ];
-    if (isEliminated) {
+    if (isEliminated)
       logEntries.push({
         text: `${updatedPlayers[pIdx].name} is ELIMINATED!`,
         type: "danger",
       });
-    }
 
     const isGameOver = checkGameOver(updatedPlayers);
     let updateData = {
@@ -1299,15 +1283,12 @@ export default function ConspiracyGame() {
       return;
     }
 
-    // 2. CHECK FOR PENDING ACTIONS (Exchange OR Double-Kill Stab)
     if (gameState.currentAction?.actionPending) {
-      // --- CASE A: EXCHANGE CONTINUES ---
       if (gameState.currentAction.type === "EXCHANGE") {
         await updateDoc(
           doc(db, "artifacts", appId, "public", "data", "rooms", roomId),
           updateData
-        ); // Save the life loss first
-
+        );
         const deck = [...gameState.deck];
         const newCards = [deck.pop(), deck.pop()];
         await updateDoc(
@@ -1321,36 +1302,32 @@ export default function ConspiracyGame() {
         );
         return;
       }
-
-      // --- CASE B: STAB PROCEEDS (DOUBLE KILL LOGIC) ---
       if (gameState.currentAction.type === "STAB") {
         const targetId = gameState.currentAction.targetId;
         const targetPlayer = updatedPlayers.find((p) => p.id === targetId);
-
-        // Only enforce the 2nd kill if the target is still alive
         if (targetPlayer && !targetPlayer.isEliminated) {
-          // Add a log explaining what's happening
           updateData.logs = arrayUnion(...logEntries, {
-            text: "Stab still lands! Target must lose another life.",
+            text: "Challenge penalty paid. Assassination continues... (Lose 2nd Life)",
             type: "danger",
           });
-
-          // Set state to make the Target lose a life immediately
           updateData.turnState = "LOSE_CARD";
           updateData.loserId = targetId;
           updateData.loseReason = "stab";
-          updateData["currentAction.actionPending"] = false; // Clear flag so we don't loop
-
+          updateData["currentAction.actionPending"] = false;
           await updateDoc(
             doc(db, "artifacts", appId, "public", "data", "rooms", roomId),
             updateData
           );
           return;
+        } else {
+          logEntries.push({
+            text: "Target eliminated. Assassination complete.",
+            type: "neutral",
+          });
+          updateData.logs = arrayUnion(...logEntries);
         }
       }
     }
-
-    // 3. NO PENDING ACTIONS -> NEXT TURN
     await updateDoc(
       doc(db, "artifacts", appId, "public", "data", "rooms", roomId),
       updateData
@@ -1361,12 +1338,10 @@ export default function ConspiracyGame() {
   const finishExchange = async () => {
     const me = gameState.players.find((p) => p.id === user.uid);
     const keepCount = me.cards.filter((c) => !c.flipped).length;
-
     if (exchangeSelection.length !== keepCount) {
       alert(`You must select exactly ${keepCount} cards.`);
       return;
     }
-
     const updatedPlayers = [...gameState.players];
     const pIdx = updatedPlayers.findIndex((p) => p.id === user.uid);
     const currentActiveTypes = me.cards
@@ -1381,7 +1356,6 @@ export default function ConspiracyGame() {
     const newActive = selectedTypes.map((type) => ({ type, flipped: false }));
     const newHand = [...newActive, ...existingFlipped];
     const newDeck = [...gameState.deck, ...rejectedTypes];
-
     updatedPlayers[pIdx].cards = newHand;
     await updateDoc(
       doc(db, "artifacts", appId, "public", "data", "rooms", roomId),
@@ -1398,7 +1372,6 @@ export default function ConspiracyGame() {
   };
 
   // --- Views ---
-
   const CardView = ({ type, flipped, onClick, selectable, size = "md" }) => {
     const info = CARDS[type];
     if (!info && !flipped) return null;
@@ -1441,6 +1414,7 @@ export default function ConspiracyGame() {
         Loading...
       </div>
     );
+
   if (view === "menu") {
     return (
       <div className="min-h-screen bg-gray-900 text-white flex flex-col items-center justify-center p-4 relative">
@@ -1515,6 +1489,34 @@ export default function ConspiracyGame() {
                   className="accent-pink-500"
                 />
               </div>
+              {/* --- NEW: Starting Cards Slider --- */}
+              <div className="flex justify-between mb-4 text-sm text-gray-400">
+                <span>Starting Cards: {startingCards}</span>
+                <div className="flex gap-4 items-center">
+                  <label className="flex items-center gap-1 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="cards"
+                      value="2"
+                      checked={parseInt(startingCards) === 2}
+                      onChange={(e) => setStartingCards(e.target.value)}
+                      className="accent-purple-500"
+                    />
+                    2 Cards
+                  </label>
+                  <label className="flex items-center gap-1 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="cards"
+                      value="3"
+                      checked={parseInt(startingCards) === 3}
+                      onChange={(e) => setStartingCards(e.target.value)}
+                      className="accent-purple-500"
+                    />
+                    3 Cards
+                  </label>
+                </div>
+              </div>
               <button
                 onClick={createRoom}
                 disabled={loading}
@@ -1553,6 +1555,9 @@ export default function ConspiracyGame() {
           <div className="bg-gray-800 rounded-xl p-6 mb-6 border border-gray-700">
             <h3 className="text-gray-400 text-sm uppercase tracking-wider mb-4">
               Players ({gameState.players.length}/{gameState.maxPlayers})
+              <span className="ml-2 text-purple-400 normal-case">
+                • {gameState.startingCards || 2} Cards Mode
+              </span>
             </h3>
             {gameState.players.map((p) => (
               <div
@@ -1598,10 +1603,7 @@ export default function ConspiracyGame() {
             </div>
           )}
         </div>
-
-        {/* FOOTER LOGO */}
         <ConspiracyLogo />
-
         {showLeaveConfirm && (
           <LeaveConfirmModal
             onConfirm={handleLeaveRoom}
@@ -1643,17 +1645,36 @@ export default function ConspiracyGame() {
         : 0;
     const neededVotes = getActivePlayers().length - 1;
     const hasVoted = gameState.currentAction?.votes.includes(user.uid);
-    const showActionControls =
-      gameState.turnState === "ACTION_PENDING" &&
-      gameState.currentAction.actorId !== user.uid;
 
-    // --- UPDATED: ELIMINATED PLAYERS CANNOT SEE BLOCK CONTROLS ---
+    // --- PRIORITY LOGIC: SHOW BUTTONS ---
+    const act = gameState.currentAction;
+    const isTargetedAction =
+      act && (act.type === "STEAL" || act.type === "STAB");
+    const targetHasPassed =
+      isTargetedAction && act.votes.includes(act.targetId);
+    const amITarget = isTargetedAction && act.targetId === user.uid;
+
+    let showActionControls = false;
+    if (
+      gameState.turnState === "ACTION_PENDING" &&
+      act.actorId !== user.uid &&
+      !me.isEliminated
+    ) {
+      if (isTargetedAction) {
+        if (!targetHasPassed) {
+          if (amITarget) showActionControls = true;
+        } else {
+          if (!amITarget) showActionControls = true;
+        }
+      } else {
+        showActionControls = true;
+      }
+    }
+
     const showBlockControls =
       gameState.turnState === "BLOCK_PENDING" &&
       gameState.currentAction.blockerId !== user.uid &&
       !me.isEliminated;
-
-    const act = gameState.currentAction;
     const alivePlayers = gameState.players.filter((p) => !p.isEliminated);
 
     let canIBlock = false;
@@ -1665,11 +1686,9 @@ export default function ConspiracyGame() {
       )
         canIBlock = true;
     }
-
     const isExchanging =
       gameState.turnState === "EXCHANGE_SELECT" &&
       me.id === getCurrentPlayer().id;
-    // Resolve Target Name for Middle Text
     let targetName = null;
     let actorName = null;
     if (act) {
@@ -1679,7 +1698,6 @@ export default function ConspiracyGame() {
       if (actorP) actorName = actorP.name;
     }
 
-    // Logic for LOSE_CARD message
     let loseCardTitle = "";
     let loseCardSub = "";
     if (gameState.turnState === "LOSE_CARD") {
@@ -1687,7 +1705,6 @@ export default function ConspiracyGame() {
         (p) => p.id === gameState.loserId
       );
       const loserName = loserPlayer ? loserPlayer.name : "Player";
-
       if (gameState.loseReason === "challenge") {
         loseCardTitle = "Challenge Lost";
         loseCardSub = `${loserName} is discarding a card...`;
@@ -1698,7 +1715,6 @@ export default function ConspiracyGame() {
         loseCardTitle = `${actorName} performs`;
         loseCardSub = `Stab on ${targetName}`;
       } else {
-        // Default fallbacks
         loseCardTitle = `${loserName} lost a life`;
         loseCardSub = "Choosing card to lose...";
       }
@@ -1706,12 +1722,10 @@ export default function ConspiracyGame() {
 
     return (
       <div className="min-h-screen bg-gray-900 text-white overflow-hidden flex flex-col relative">
-        {/* HEADER */}
         <div className="p-2 bg-gray-800 flex justify-between items-center border-b border-gray-700 z-50 relative">
           <div className="text-sm font-bold text-purple-400">
             Room: {gameState.id}
           </div>
-          {/* --- NEW CODE: Info and Leave Button Group --- */}
           <div className="flex items-center gap-3">
             <button
               onClick={() => setShowLogHistory(true)}
@@ -1728,9 +1742,7 @@ export default function ConspiracyGame() {
           </div>
         </div>
 
-        {/* MAIN GAME AREA */}
         <div className="flex-1 relative p-4 flex flex-col">
-          {/* TURN MESSAGE OVERLAY (TOP THIRD) */}
           {gameState.turnState === "IDLE" &&
             !gameState.status.includes("finished") && (
               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-0 pointer-events-none">
@@ -1752,13 +1764,11 @@ export default function ConspiracyGame() {
                       : "border-gray-700"
                   } ${p.isEliminated ? "opacity-50" : ""} relative`}
                 >
-                  {/* --- NEW CODE: Eliminated Banner --- */}
                   {p.isEliminated && (
                     <div className="absolute inset-x-0 top-8 bg-red-900/80 text-red-500 text-[10px] font-black uppercase tracking-widest text-center py-1 z-20 border-y border-red-700">
                       ELIMINATED
                     </div>
                   )}
-
                   <div className="flex justify-between items-start mb-2">
                     <span className="font-bold text-xs truncate w-20">
                       {p.name}
@@ -1784,8 +1794,6 @@ export default function ConspiracyGame() {
                       </div>
                     ))}
                   </div>
-
-                  {/* --- TARGET BUTTONS --- */}
                   {isMyTurnBool &&
                     gameState.turnState === "IDLE" &&
                     !p.isEliminated && (
@@ -1813,8 +1821,6 @@ export default function ConspiracyGame() {
                         </button>
                       </div>
                     )}
-
-                  {/* --- GREEN TICK FOR VOTES --- */}
                   {gameState.currentAction?.votes.includes(p.id) &&
                     (gameState.turnState === "ACTION_PENDING" ||
                       gameState.turnState === "BLOCK_PENDING") && (
@@ -1854,7 +1860,6 @@ export default function ConspiracyGame() {
               </div>
             )}
 
-            {/* CENTER MESSAGE AREA: PENDING OR KILL/LOSE */}
             {(gameState.turnState === "ACTION_PENDING" ||
               gameState.turnState === "LOSE_CARD") && (
               <div className="w-full max-w-md bg-gray-800 p-4 rounded border border-yellow-500/50 relative shadow-2xl">
@@ -1897,18 +1902,15 @@ export default function ConspiracyGame() {
                   )}
                 </div>
 
-                {/* CONTROLS FOR PENDING */}
                 {gameState.turnState === "ACTION_PENDING" &&
                   showActionControls &&
                   !me.isEliminated && (
                     <div className="grid grid-cols-2 gap-2">
                       {hasVoted ? (
-                        /* --- STATE 1: USER HAS VOTED (SHOW ONLY WAITING) --- */
                         <div className="col-span-2 bg-gray-700 py-2 text-center text-gray-400 text-sm rounded">
                           Waiting for others...
                         </div>
                       ) : (
-                        /* --- STATE 2: USER HAS NOT VOTED (SHOW ALL BUTTONS) --- */
                         <>
                           <button
                             onClick={handlePass}
@@ -1916,8 +1918,6 @@ export default function ConspiracyGame() {
                           >
                             Pass (Accept)
                           </button>
-
-                          {/* Challenge Button - Hidden if action is EXPORT */}
                           {act.type !== "EXPORT" && (
                             <button
                               onClick={() => handleChallenge(user.uid)}
@@ -1926,8 +1926,6 @@ export default function ConspiracyGame() {
                               <XCircle size={14} /> Challenge
                             </button>
                           )}
-
-                          {/* Block Buttons */}
                           {canIBlock && act.type === "EXPORT" && (
                             <button
                               onClick={() => handleBlock(user.uid, "HERO")}
@@ -1964,12 +1962,14 @@ export default function ConspiracyGame() {
                       )}
                     </div>
                   )}
-
-                {/* WAITING MESSAGE FOR PENDING */}
                 {gameState.turnState === "ACTION_PENDING" &&
                   !showActionControls && (
                     <div className="text-center text-xs text-gray-500 animate-pulse">
-                      Waiting for consensus...
+                      {isTargetedAction && !targetHasPassed ? (
+                        <span>Waiting for {targetName} to decide...</span>
+                      ) : (
+                        <span>Waiting for consensus...</span>
+                      )}
                     </div>
                   )}
               </div>
@@ -1993,12 +1993,10 @@ export default function ConspiracyGame() {
                 {showBlockControls && (
                   <div className="grid grid-cols-2 gap-2">
                     {gameState.currentAction.votes.includes(user.uid) ? (
-                      /* --- STATE 1: USER HAS VOTED (SHOW ONLY WAITING) --- */
                       <div className="col-span-2 text-gray-500 text-xs">
                         You passed. Waiting...
                       </div>
                     ) : (
-                      /* --- STATE 2: USER HAS NOT VOTED (SHOW ACCEPT & CHALLENGE) --- */
                       <>
                         <button
                           onClick={handleAcceptBlock}
@@ -2018,44 +2016,64 @@ export default function ConspiracyGame() {
                 )}
               </div>
             )}
+
+            {/* --- REPLACED: Challenge Resolve UI (Show Specific Card) --- */}
             {gameState.turnState === "CHALLENGE_RESOLVE" && (
               <div className="text-center w-full max-w-md">
                 <div className="text-red-400 font-bold mb-2 bg-red-900/20 p-2 rounded border border-red-900">
                   CHALLENGE IN PROGRESS
                 </div>
                 {gameState.accusedId === user.uid ? (
-                  <div className="bg-gray-800 p-4 rounded border border-gray-700">
-                    <div className="text-sm mb-4">
-                      Prove you have <strong>{gameState.challengedCard}</strong>
+                  <div className="bg-gray-800 p-6 rounded-xl border border-gray-700 shadow-2xl">
+                    <div className="text-lg mb-6 font-medium text-gray-300">
+                      You are accused of not having: <br />
+                      <span className="text-2xl font-black text-yellow-400 uppercase tracking-wider">
+                        {gameState.challengedCard}
+                      </span>
                     </div>
-                    <div className="flex justify-center gap-2">
-                      {me.cards.map(
-                        (c, i) =>
-                          !c.flipped && (
-                            <button
-                              key={i}
-                              onClick={() => resolveChallenge(i)}
-                              className="bg-gray-700 px-4 py-2 rounded text-sm hover:bg-gray-600 border border-gray-500"
-                            >
-                              Show {c.type}
-                            </button>
-                          )
-                      )}
+                    <div className="flex justify-center gap-3 flex-wrap">
+                      {me.cards.map((c, i) => {
+                        if (c.flipped) return null;
+                        if (c.type !== gameState.challengedCard) return null;
+                        return (
+                          <button
+                            key={i}
+                            onClick={() => resolveChallenge(i)}
+                            className="bg-green-600 hover:bg-green-500 text-white px-6 py-3 rounded-lg font-bold shadow-lg border-b-4 border-green-800 active:border-b-0 active:translate-y-1 transition-all flex items-center gap-2"
+                          >
+                            <CheckCircle size={20} /> Show {c.type}
+                          </button>
+                        );
+                      })}
                     </div>
                     <button
                       onClick={handleSurrender}
-                      className="mt-4 text-xs text-red-400 underline"
+                      className={`mt-6 text-sm underline transition-colors ${
+                        me.cards.some(
+                          (c) =>
+                            !c.flipped && c.type === gameState.challengedCard
+                        )
+                          ? "text-gray-500 hover:text-gray-300"
+                          : "text-red-400 hover:text-red-300 font-bold scale-110"
+                      }`}
                     >
                       I don't have it (Surrender)
                     </button>
                   </div>
                 ) : (
-                  <div className="text-sm animate-pulse">
-                    Waiting for accused to reveal...
+                  <div className="text-sm animate-pulse text-gray-400 bg-gray-800/50 p-4 rounded">
+                    Waiting for{" "}
+                    {
+                      gameState.players.find(
+                        (p) => p.id === gameState.accusedId
+                      )?.name
+                    }{" "}
+                    to respond...
                   </div>
                 )}
               </div>
             )}
+
             {isExchanging && (
               <div className="fixed inset-0 bg-black/95 z-50 flex flex-col items-center justify-center p-4 pb-32">
                 <h3 className="text-xl font-bold mb-2 text-emerald-400">
@@ -2074,7 +2092,6 @@ export default function ConspiracyGame() {
                       key={i}
                       onClick={() => {
                         const newSel = [...exchangeSelection];
-                        // Use INDEX matching now
                         if (newSel.includes(i)) {
                           const removeIdx = newSel.indexOf(i);
                           newSel.splice(removeIdx, 1);
@@ -2110,7 +2127,6 @@ export default function ConspiracyGame() {
             )}
           </div>
 
-          {/* --- NEW LOG FIELD ABOVE CARDS (HIDDEN ON FINISH) --- */}
           {!isExchanging && gameState.status !== "finished" && (
             <div className="w-full max-w-md mx-auto mb-2 flex flex-col items-center space-y-1 pointer-events-none z-20">
               {gameState.logs
@@ -2194,14 +2210,14 @@ export default function ConspiracyGame() {
                     className="bg-purple-900/50 border border-purple-700 p-2 rounded flex flex-col items-center"
                   >
                     <Crown size={16} className="text-purple-300" />
-                    <span className="text-[10px]">Hero (3 coins)</span>
+                    <span className="text-[10px]">Hero Bonus (3 coins)</span>
                   </button>
                   <button
                     onClick={() => handleAction("EXCHANGE")}
                     className="bg-emerald-900/50 border border-emerald-700 p-2 rounded flex flex-col items-center"
                   >
                     <RefreshCcw size={16} className="text-emerald-300" />
-                    <span className="text-[10px]">Riddler (exchange card)</span>
+                    <span className="text-[10px]">Riddler (exchange)</span>
                   </button>
                 </div>
               )}
@@ -2213,19 +2229,15 @@ export default function ConspiracyGame() {
           )}
         </div>
 
-        {/* GAME SCREEN FOOTER LOGO */}
         <div className="bg-gray-800 pb-1 pt-1">
           <ConspiracyLogo />
         </div>
-
         {showLeaveConfirm && (
           <LeaveConfirmModal
             onConfirm={handleLeaveRoom}
             onCancel={() => setShowLeaveConfirm(false)}
           />
         )}
-
-        {/* --- NEW CODE: Log History Modal --- */}
         {showLogHistory && (
           <div className="fixed inset-0 bg-black/90 z-[100] flex items-center justify-center p-4">
             <div className="bg-gray-800 rounded-2xl w-full max-w-md h-[80vh] flex flex-col border border-gray-700 shadow-2xl">
@@ -2263,4 +2275,3 @@ export default function ConspiracyGame() {
   }
   return null;
 }
-//coin management issue solved for steal, stab, export
