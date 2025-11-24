@@ -36,13 +36,12 @@ import {
 
 // --- Firebase Config & Init ---
 const firebaseConfig = {
-  apiKey: "AIzaSyBuqx_QQMMusEFu7BgE_Xnts82K6bKnqhQ",
-  authDomain: "conspiracy-936b1.firebaseapp.com",
-  projectId: "conspiracy-936b1",
-  storageBucket: "conspiracy-936b1.firebasestorage.app",
-  messagingSenderId: "74169733006",
-  appId: "1:74169733006:web:9efd5d6032c7317e4d5edf",
-  measurementId: "G-LZB3DTW0T0",
+  apiKey: "AIzaSyDf86JHBvY9Y1B1x8QDbJkASmlANouEvX0",
+  authDomain: "card-games-28729.firebaseapp.com",
+  projectId: "card-games-28729",
+  storageBucket: "card-games-28729.firebasestorage.app",
+  messagingSenderId: "466779458834",
+  appId: "1:466779458834:web:a5f4c09c44fb15176d37cb"
 };
 
 const app = initializeApp(firebaseConfig);
