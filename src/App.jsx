@@ -45,7 +45,7 @@ const firebaseConfig = {
   projectId: "game-hub-ff8aa",
   storageBucket: "game-hub-ff8aa.firebasestorage.app",
   messagingSenderId: "586559578902",
-  appId: "1:586559578902:web:e2c7114fcf22055a6aa637",
+  appId: "1:586559578902:web:2c9029761ef876856aa637"
 };
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
