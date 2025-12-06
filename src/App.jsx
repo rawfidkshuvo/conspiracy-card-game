@@ -171,7 +171,6 @@ const shuffle = (array) => {
 
 // --- Sub-Components ---
 
-// UPDATED: Subtle Purple Hue
 const FloatingBackground = () => (
   <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
     <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-gray-900 via-gray-900 to-black" />
@@ -350,26 +349,44 @@ const RulesModal = ({ onClose }) => {
   );
 };
 
-const LeaveConfirmModal = ({ onConfirm, onCancel }) => (
+// UPDATED MODAL with Host Button logic
+const LeaveConfirmModal = ({
+  onConfirm,
+  onCancel,
+  isHost,
+  onReturnToLobby,
+}) => (
   <div className="fixed inset-0 bg-black/90 z-[200] flex items-center justify-center p-4 animate-in fade-in">
     <div className="bg-gray-800 rounded-xl border border-gray-700 p-6 max-w-sm w-full text-center shadow-2xl">
       <h3 className="text-xl font-bold text-white mb-2">Abandon Conspiracy?</h3>
       <p className="text-gray-400 mb-6 text-sm">
-        Leaving now will forfeit your position in the game.
+        {isHost && onReturnToLobby
+          ? "As Host, you can return everyone to the lobby or leave the game completely."
+          : "Leaving now will forfeit your position in the game."}
       </p>
-      <div className="grid grid-cols-2 gap-3">
-        <button
-          onClick={onCancel}
-          className="bg-gray-700 hover:bg-gray-600 text-white py-3 rounded font-bold transition-colors"
-        >
-          Stay
-        </button>
-        <button
-          onClick={onConfirm}
-          className="bg-red-600 hover:bg-red-500 text-white py-3 rounded font-bold transition-colors"
-        >
-          Leave
-        </button>
+      <div className="flex flex-col gap-3">
+        {isHost && onReturnToLobby && (
+          <button
+            onClick={onReturnToLobby}
+            className="w-full bg-purple-700 hover:bg-purple-600 text-white py-3 rounded font-bold transition-colors border border-purple-500 shadow-lg mb-2"
+          >
+            Return Group to Lobby
+          </button>
+        )}
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            onClick={onCancel}
+            className="bg-gray-700 hover:bg-gray-600 text-white py-3 rounded font-bold transition-colors"
+          >
+            Stay
+          </button>
+          <button
+            onClick={onConfirm}
+            className="bg-red-600 hover:bg-red-500 text-white py-3 rounded font-bold transition-colors"
+          >
+            Leave
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -428,7 +445,9 @@ export default function ConspiracyGame() {
         if (docSnap.exists()) {
           const data = docSnap.data();
           setGameState({ id: docSnap.id, ...data });
-          if (data.status === "playing" || data.status === "finished")
+          // If status changes to 'lobby' from 'playing', redirect everyone
+          if (data.status === "lobby") setView("lobby");
+          else if (data.status === "playing" || data.status === "finished")
             setView("game");
           else setView("lobby");
         } else {
@@ -625,6 +644,41 @@ export default function ConspiracyGame() {
       }
     );
   };
+
+  // --- NEW: Return To Lobby Logic ---
+  const returnToLobby = async () => {
+    if (!gameState || gameState.hostId !== user.uid) return;
+
+    // Reset players for lobby state (remove cards, reset coins)
+    const resetPlayers = gameState.players.map((p) => ({
+      ...p,
+      coins: 2,
+      cards: [],
+      isEliminated: false,
+      ready: true,
+    }));
+
+    try {
+      await updateDoc(
+        doc(db, "artifacts", appId, "public", "data", "rooms", roomId),
+        {
+          status: "lobby", // This triggers the view change in your useEffect
+          players: resetPlayers,
+          deck: [],
+          turnIndex: 0,
+          turnState: "IDLE",
+          currentAction: null,
+          logs: [
+            { text: "Host returned the group to the lobby.", type: "neutral" },
+          ],
+        }
+      );
+      setShowLeaveConfirm(false);
+    } catch (e) {
+      console.error("Error returning to lobby:", e);
+    }
+  };
+
   // --- Game Logic ---
   const getActivePlayers = () =>
     gameState?.players.filter((p) => !p.isEliminated) || [];
@@ -1624,6 +1678,8 @@ export default function ConspiracyGame() {
           <LeaveConfirmModal
             onConfirm={handleLeaveRoom}
             onCancel={() => setShowLeaveConfirm(false)}
+            isHost={gameState?.hostId === user?.uid}
+            // onReturnToLobby prop removed for Lobby View
           />
         )}
       </div>
@@ -2332,6 +2388,8 @@ export default function ConspiracyGame() {
           <LeaveConfirmModal
             onConfirm={handleLeaveRoom}
             onCancel={() => setShowLeaveConfirm(false)}
+            isHost={gameState?.hostId === user?.uid}
+            onReturnToLobby={returnToLobby}
           />
         )}
         {showLogHistory && (
@@ -2371,4 +2429,3 @@ export default function ConspiracyGame() {
   }
   return null;
 }
-//final done
