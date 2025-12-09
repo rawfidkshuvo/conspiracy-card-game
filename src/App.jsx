@@ -36,6 +36,7 @@ import {
   User,
   Zap,
   History,
+  Hammer,
 } from "lucide-react";
 
 // --- Firebase Config & Init ---
@@ -52,6 +53,7 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 
 const appId = typeof __app_id !== "undefined" ? __app_id : "conspiracy-game";
+const GAME_ID = "1";
 
 // --- Game Constants ---
 const CARDS = {
@@ -414,6 +416,7 @@ export default function ConspiracyGame() {
   const [showRules, setShowRules] = useState(false);
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
   const [showLogHistory, setShowLogHistory] = useState(false);
+  const [isMaintenance, setIsMaintenance] = useState(false);
 
   useEffect(() => {
     const initAuth = async () => {
@@ -460,6 +463,43 @@ export default function ConspiracyGame() {
     );
     return () => unsubscribe();
   }, [roomId, user]);
+  
+  // ... existing auth useEffect ...
+
+  // --- ADD THIS EFFECT ---
+  useEffect(() => {
+    const unsub = onSnapshot(doc(db, "game_hub_settings", "config"), (doc) => {
+      if (doc.exists()) {
+        const data = doc.data();
+        if (data[GAME_ID]?.maintenance) {
+          setIsMaintenance(true);
+        } else {
+          setIsMaintenance(false);
+        }
+      }
+    });
+    return () => unsub();
+  }, []);
+
+  // --- ADD THIS BLOCK ---
+  if (isMaintenance) {
+    return (
+      <div className="min-h-screen bg-gray-950 flex flex-col items-center justify-center text-white p-4 text-center">
+        <div className="bg-orange-500/10 p-8 rounded-2xl border border-orange-500/30">
+          <Hammer
+            size={64}
+            className="text-orange-500 mx-auto mb-4 animate-bounce"
+          />
+          <h1 className="text-3xl font-bold mb-2">Under Maintenance</h1>
+          <p className="text-gray-400">
+            The Council is in a closed session. No plots can be hatched at this time.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // ... existing code: if (view === "menu") { ...
 
   const createRoom = async () => {
     if (!user || !playerName.trim()) return setError("Enter a nickname first.");
