@@ -37,6 +37,7 @@ import {
   Zap,
   History,
   Hammer,
+  Sparkles,
 } from "lucide-react";
 
 // --- Firebase Config & Init ---
@@ -495,6 +496,20 @@ export default function ConspiracyGame() {
             The Council is in a closed session. No plots can be hatched at this time.
           </p>
         </div>
+        {/* Add Spacing Between Boxes */}
+        <div className="h-8"></div>
+
+        {/* Clickable Second Card */}
+        <a href="https://rawfidkshuvo.github.io/gamehub/">
+          <div className="flex items-center justify-center gap-3 mb-2">
+            <div className="text-center pb-12 animate-pulse">
+              <div className="inline-flex items-center gap-3 px-8 py-4 bg-slate-900/50 rounded-full border border-indigo-500/20 text-indigo-300 font-bold tracking-widest text-sm uppercase backdrop-blur-sm">
+                <Sparkles size={16} /> Visit Gamehub...Try our other releases...{" "}
+                <Sparkles size={16} />
+              </div>
+            </div>
+          </div>
+        </a>
       </div>
     );
   }
