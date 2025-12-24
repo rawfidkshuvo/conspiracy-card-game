@@ -14,6 +14,7 @@ import {
   updateDoc,
   onSnapshot,
   arrayUnion,
+  deleteDoc
 } from "firebase/firestore";
 import {
   Shield,
@@ -38,6 +39,8 @@ import {
   History,
   Hammer,
   Sparkles,
+  Trash2, // Added Trash icon
+  Users
 } from "lucide-react";
 
 // --- Firebase Config & Init ---
@@ -364,6 +367,8 @@ const LeaveConfirmModal = ({
       <p className="text-gray-400 mb-6 text-sm">
         {isHost && onReturnToLobby
           ? "As Host, you can return everyone to the lobby or leave the game completely."
+          : isHost 
+          ? "WARNING: Leaving as Host will close the room for everyone."
           : "Leaving now will forfeit your position in the game."}
       </p>
       <div className="flex flex-col gap-3">
@@ -386,7 +391,7 @@ const LeaveConfirmModal = ({
             onClick={onConfirm}
             className="bg-red-600 hover:bg-red-500 text-white py-3 rounded font-bold transition-colors"
           >
-            Leave
+            {isHost ? "Close Room" : "Leave"}
           </button>
         </div>
       </div>
@@ -431,17 +436,16 @@ export default function ConspiracyGame() {
     return () => unsubscribe();
   }, []);
 
-  // --- NEW: RESTORE SESSION FROM LOCALSTORAGE ---
+  // --- RESTORE SESSION ---
   useEffect(() => {
-    // Only try to restore if we are logged in and in the menu
     if (user && view === "menu") {
       const savedRoomId = localStorage.getItem("conspiracy_room_id");
       const savedPlayerName = localStorage.getItem("conspiracy_player_name");
 
       if (savedRoomId && savedPlayerName) {
-        setLoading(true); // Show loading while we reconnect
+        setLoading(true);
         setPlayerName(savedPlayerName);
-        setRoomId(savedRoomId); // Setting this triggers the onSnapshot below
+        setRoomId(savedRoomId); 
       }
     }
   }, [user, view]);
@@ -462,20 +466,41 @@ export default function ConspiracyGame() {
       (docSnap) => {
         if (docSnap.exists()) {
           const data = docSnap.data();
+          
+          // --- KICK CHECK: If I am no longer in the player list ---
+          const amIInList = data.players?.find(p => p.id === user.uid);
+          if (!amIInList) {
+             setRoomId(null);
+             setView("menu");
+             setError("You have been removed from the room.");
+             localStorage.removeItem("conspiracy_room_id");
+             localStorage.removeItem("conspiracy_player_name");
+             setLoading(false);
+             return;
+          }
+
+          // --- CLOSED CHECK: If Host abandoned the room ---
+          if (data.status === "closed") {
+             setRoomId(null);
+             setView("menu");
+             setError("The Host has closed the room.");
+             localStorage.removeItem("conspiracy_room_id");
+             localStorage.removeItem("conspiracy_player_name");
+             setLoading(false);
+             return;
+          }
+
           setGameState({ id: docSnap.id, ...data });
-          // If status changes to 'lobby' from 'playing', redirect everyone
           if (data.status === "lobby") setView("lobby");
           else if (data.status === "playing" || data.status === "finished")
             setView("game");
           else setView("lobby");
-          setLoading(false); // Valid room found, stop loading
+          setLoading(false); 
         } else {
-          // Room does not exist or was closed
           setRoomId(null);
           setView("menu");
           setError("Room closed or does not exist.");
           setLoading(false);
-          // Clean up storage so we don't loop
           localStorage.removeItem("conspiracy_room_id");
           localStorage.removeItem("conspiracy_player_name");
         }
@@ -559,7 +584,6 @@ export default function ConspiracyGame() {
         doc(db, "artifacts", appId, "public", "data", "rooms", newRoomId),
         roomData
       );
-      // --- NEW: SAVE TO STORAGE ---
       localStorage.setItem("conspiracy_room_id", newRoomId);
       localStorage.setItem("conspiracy_player_name", playerName);
 
@@ -575,6 +599,15 @@ export default function ConspiracyGame() {
     await updateDoc(
       doc(db, "artifacts", appId, "public", "data", "rooms", roomId),
       { startingCards: parseInt(cards) }
+    );
+  };
+
+  const kickPlayer = async (targetId) => {
+    if (!gameState || gameState.hostId !== user.uid) return;
+    const updatedPlayers = gameState.players.filter(p => p.id !== targetId);
+    await updateDoc(
+        doc(db, "artifacts", appId, "public", "data", "rooms", roomId),
+        { players: updatedPlayers }
     );
   };
 
@@ -595,16 +628,19 @@ export default function ConspiracyGame() {
       const snap = await getDoc(roomRef);
       if (!snap.exists()) throw new Error("Room not found.");
       const data = snap.data();
+      if (data.status === 'closed') throw new Error("Room has been closed.");
+
       if (data.players.length >= data.maxPlayers) throw new Error("Room full.");
+      
+      const exists = data.players.find((p) => p.id === user.uid);
+      
       if (
         data.status !== "lobby" &&
-        !data.players.find((p) => p.id === user.uid)
+        !exists
       ) {
-        // Only allow join during game if it's a reconnect (though the storage logic handles reconnects)
         throw new Error("Game started.");
       }
 
-      const exists = data.players.find((p) => p.id === user.uid);
       if (!exists) {
         await updateDoc(roomRef, {
           players: arrayUnion({
@@ -618,7 +654,6 @@ export default function ConspiracyGame() {
         });
       }
 
-      // --- NEW: SAVE TO STORAGE ---
       localStorage.setItem("conspiracy_room_id", roomCode);
       localStorage.setItem("conspiracy_player_name", playerName);
 
@@ -631,37 +666,49 @@ export default function ConspiracyGame() {
 
   const handleLeaveRoom = async () => {
     if (!roomId || !user || !gameState) return;
-    const updatedPlayers = gameState.players.filter((p) => p.id !== user.uid);
-    let status = gameState.status;
-    if (status === "playing" && updatedPlayers.length < 2) status = "finished";
 
-    const myIndex = gameState.players.findIndex((p) => p.id === user.uid);
-    let newTurnIndex = gameState.turnIndex;
-    if (myIndex < gameState.turnIndex)
-      newTurnIndex = Math.max(0, newTurnIndex - 1);
-    if (newTurnIndex >= updatedPlayers.length) newTurnIndex = 0;
+    // --- NEW LOGIC: Host Abandonment ---
+    const isHost = gameState.hostId === user.uid;
 
-    const logs = [...(gameState.logs || [])];
-    const me = gameState.players.find((p) => p.id === user.uid);
-    if (me) logs.push({ text: `${me.name} left the game.`, type: "danger" });
-    if (status === "finished" && gameState.status === "playing")
-      logs.push({ text: "Not enough players. Game Over.", type: "neutral" });
+    if (isHost) {
+        // Close the room for everyone
+        await updateDoc(
+            doc(db, "artifacts", appId, "public", "data", "rooms", roomId),
+            { status: "closed" }
+        );
+    } else {
+        // Regular player leaving logic
+        const updatedPlayers = gameState.players.filter((p) => p.id !== user.uid);
+        let status = gameState.status;
+        if (status === "playing" && updatedPlayers.length < 2) status = "finished";
 
-    try {
-      await updateDoc(
-        doc(db, "artifacts", appId, "public", "data", "rooms", roomId),
-        {
-          players: updatedPlayers,
-          status: status,
-          turnIndex: newTurnIndex,
-          logs: logs,
+        const myIndex = gameState.players.findIndex((p) => p.id === user.uid);
+        let newTurnIndex = gameState.turnIndex;
+        if (myIndex < gameState.turnIndex)
+          newTurnIndex = Math.max(0, newTurnIndex - 1);
+        if (newTurnIndex >= updatedPlayers.length) newTurnIndex = 0;
+
+        const logs = [...(gameState.logs || [])];
+        const me = gameState.players.find((p) => p.id === user.uid);
+        if (me) logs.push({ text: `${me.name} left the game.`, type: "danger" });
+        if (status === "finished" && gameState.status === "playing")
+          logs.push({ text: "Not enough players. Game Over.", type: "neutral" });
+
+        try {
+          await updateDoc(
+            doc(db, "artifacts", appId, "public", "data", "rooms", roomId),
+            {
+              players: updatedPlayers,
+              status: status,
+              turnIndex: newTurnIndex,
+              logs: logs,
+            }
+          );
+        } catch (e) {
+          console.error("Error leaving room", e);
         }
-      );
-    } catch (e) {
-      console.error("Error leaving room", e);
     }
 
-    // --- NEW: CLEAR STORAGE ---
     localStorage.removeItem("conspiracy_room_id");
     localStorage.removeItem("conspiracy_player_name");
 
@@ -686,6 +733,7 @@ export default function ConspiracyGame() {
         coins: 2,
         cards: hand,
         isEliminated: false,
+        ready: false, // Reset ready status on game start
       };
     });
     await updateDoc(
@@ -716,6 +764,7 @@ export default function ConspiracyGame() {
         coins: 2,
         cards: hand,
         isEliminated: false,
+        ready: false, // Reset ready for everyone
       };
     });
 
@@ -742,7 +791,7 @@ export default function ConspiracyGame() {
       coins: 2,
       cards: [],
       isEliminated: false,
-      ready: true,
+      ready: true, // Auto ready in lobby for now or force them to click? Existing logic was true
     }));
 
     try {
@@ -764,6 +813,17 @@ export default function ConspiracyGame() {
     } catch (e) {
       console.error("Error returning to lobby:", e);
     }
+  };
+  
+  const handleGameEndReady = async () => {
+      if(!gameState) return;
+      const updatedPlayers = gameState.players.map(p => {
+          if (p.id === user.uid) return { ...p, ready: true };
+          return p;
+      });
+      await updateDoc(doc(db, "artifacts", appId, "public", "data", "rooms", roomId), {
+          players: updatedPlayers
+      });
   };
 
   // --- Game Logic ---
@@ -1155,6 +1215,8 @@ export default function ConspiracyGame() {
 
     if (isGameOver) {
       updateData.status = "finished";
+      // RESET READY STATE ON GAME END
+      updateData.players = updatedPlayers.map(p => ({...p, ready: false}));
     } else if (nextState === "LOSE_CARD") {
       updateData.turnState = "LOSE_CARD";
       updateData.loserId = nextLoserId;
@@ -1357,6 +1419,8 @@ export default function ConspiracyGame() {
 
     if (isGameOver) {
       updateData.status = "finished";
+      // RESET READY STATE
+      updateData.players = updatedPlayers.map(p => ({...p, ready: false}));
     } else if (nextState === "LOSE_CARD") {
       updateData.turnState = "LOSE_CARD";
       updateData.loserId = nextLoserId;
@@ -1421,6 +1485,9 @@ export default function ConspiracyGame() {
         text: `Game Over! ${alive[0]?.name} Wins!`,
         type: "success",
       });
+      // RESET READY STATE
+      updateData.players = updatedPlayers.map(p => ({...p, ready: false}));
+
       await updateDoc(
         doc(db, "artifacts", appId, "public", "data", "rooms", roomId),
         updateData
@@ -1707,7 +1774,7 @@ export default function ConspiracyGame() {
               {gameState.players.map((p) => (
                 <div
                   key={p.id}
-                  className="flex items-center justify-between bg-gray-800/50 p-3 rounded border border-gray-700/50"
+                  className="flex items-center justify-between bg-gray-800/50 p-3 rounded border border-gray-700/50 group"
                 >
                   <span
                     className={`font-bold flex items-center gap-2 ${
@@ -1725,9 +1792,21 @@ export default function ConspiracyGame() {
                       <Crown size={14} className="text-yellow-500" />
                     )}
                   </span>
-                  <span className="text-green-500 text-xs flex items-center gap-1">
-                    <CheckCircle size={12} /> Ready
-                  </span>
+                  
+                  <div className="flex items-center gap-2">
+                      <span className="text-green-500 text-xs flex items-center gap-1">
+                        <CheckCircle size={12} /> Ready
+                      </span>
+                      {isHost && p.id !== user.uid && (
+                          <button 
+                            onClick={() => kickPlayer(p.id)}
+                            className="p-1.5 text-red-500 hover:bg-red-900/20 rounded transition-colors opacity-0 group-hover:opacity-100"
+                            title="Kick Player"
+                          >
+                              <Trash2 size={14} />
+                          </button>
+                      )}
+                  </div>
                 </div>
               ))}
               {gameState.players.length < 2 && (
@@ -1815,6 +1894,11 @@ export default function ConspiracyGame() {
       gameState.currentAction.blockerId !== user.uid &&
       !me.isEliminated;
     const alivePlayers = gameState.players.filter((p) => !p.isEliminated);
+    
+    // --- READY LOGIC FOR GAME OVER ---
+    const allReady = getActivePlayers().every(p => p.ready); // Only count non-eliminated or all? Logic implies all current players.
+    // If game finished, "players" contains everyone. We probably want everyone to be ready to restart.
+    const allPlayersReady = gameState.players.every(p => p.ready);
 
     let canIBlock = false;
     if (act) {
@@ -1927,6 +2011,11 @@ export default function ConspiracyGame() {
                       Terminated
                     </div>
                   )}
+                  {gameState.status === "finished" && p.ready && (
+                      <div className="absolute -top-2 -right-2 bg-green-500 text-white rounded-full p-1 z-30 shadow-lg animate-in zoom-in">
+                          <CheckCircle size={12} />
+                      </div>
+                  )}
                   <div className="flex justify-between items-start mb-2">
                     <span
                       className={`font-bold text-sm truncate w-20 flex items-center gap-1 ${
@@ -2001,7 +2090,7 @@ export default function ConspiracyGame() {
 
           <div className="flex-1 flex flex-col items-center justify-center my-2 space-y-4 z-10 relative">
             {gameState.status === "finished" && (
-              <div className="absolute inset-0 bg-black/90 flex flex-col items-center justify-center z-50 backdrop-blur-sm rounded-xl border border-purple-500/30">
+              <div className="absolute inset-0 bg-black/95 flex flex-col items-center justify-center z-50 backdrop-blur-md rounded-xl border border-purple-500/30 p-8">
                 <Trophy
                   size={64}
                   className="text-yellow-400 mb-4 animate-bounce drop-shadow-[0_0_15px_rgba(250,204,21,0.5)]"
@@ -2009,19 +2098,71 @@ export default function ConspiracyGame() {
                 <div className="text-4xl font-bold text-white mb-2 font-serif">
                   Victory
                 </div>
-                <div className="text-xl text-purple-400 mb-8">
+                <div className="text-xl text-purple-400 mb-6">
                   Agent {alivePlayers[0]?.name} Survives
                 </div>
+                
+                {/* Ready Check Section */}
+                <div className="w-full max-w-sm mb-6 bg-gray-900/50 rounded-lg p-4 border border-gray-700">
+                    <div className="text-sm text-gray-400 mb-3 uppercase tracking-wider text-center">
+                        Readiness Check
+                    </div>
+                    <div className="flex flex-wrap justify-center gap-2 mb-4">
+                        {gameState.players.map(p => (
+                            <div key={p.id} className={`flex items-center gap-1 text-xs px-2 py-1 rounded border ${p.ready ? 'bg-green-900/30 border-green-600 text-green-400' : 'bg-gray-800 border-gray-700 text-gray-500'}`}>
+                                {p.ready ? <CheckCircle size={10} /> : <div className="w-2.5 h-2.5 rounded-full border border-gray-500" />}
+                                {p.name}
+                            </div>
+                        ))}
+                    </div>
+                    
+                    {!me.ready ? (
+                        <button 
+                            onClick={handleGameEndReady}
+                            className="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold py-3 rounded-lg transition-all animate-pulse"
+                        >
+                            Mark as Ready
+                        </button>
+                    ) : (
+                        <div className="text-center text-green-500 font-bold py-2 bg-green-900/20 rounded">
+                            You are Ready
+                        </div>
+                    )}
+                </div>
+
                 {gameState.hostId === user.uid ? (
-                  <button
-                    onClick={restartGame}
-                    className="bg-green-700 hover:bg-green-600 px-8 py-4 rounded-xl font-bold text-lg flex items-center gap-2 shadow-lg"
-                  >
-                    <RotateCcw /> New Operation
-                  </button>
+                    <div className="flex flex-col gap-3 w-full max-w-xs">
+                        <button
+                            onClick={restartGame}
+                            disabled={!allPlayersReady}
+                            className={`px-8 py-3 rounded-xl font-bold text-lg flex items-center justify-center gap-2 shadow-lg transition-all ${
+                                allPlayersReady 
+                                ? "bg-green-700 hover:bg-green-600 cursor-pointer" 
+                                : "bg-gray-800 text-gray-500 cursor-not-allowed"
+                            }`}
+                        >
+                            <RotateCcw size={18} /> New Operation
+                        </button>
+                        <button
+                            onClick={returnToLobby}
+                            disabled={!allPlayersReady}
+                            className={`px-8 py-3 rounded-xl font-bold text-lg flex items-center justify-center gap-2 shadow-lg transition-all border ${
+                                allPlayersReady 
+                                ? "bg-transparent border-purple-500 text-purple-300 hover:bg-purple-900/20 cursor-pointer" 
+                                : "bg-transparent border-gray-700 text-gray-600 cursor-not-allowed"
+                            }`}
+                        >
+                            <Users size={18} /> Return to Lobby
+                        </button>
+                        {!allPlayersReady && (
+                            <div className="text-xs text-center text-gray-500 animate-pulse mt-1">
+                                Wait for all agents to signal readiness...
+                            </div>
+                        )}
+                    </div>
                 ) : (
-                  <div className="text-gray-500 animate-pulse text-sm">
-                    Awaiting Host Reset...
+                  <div className="text-gray-500 animate-pulse text-sm mt-4">
+                    Waiting for Host Protocol...
                   </div>
                 )}
               </div>
