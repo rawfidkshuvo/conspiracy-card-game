@@ -47,7 +47,7 @@ const firebaseConfig = {
   projectId: "game-hub-ff8aa",
   storageBucket: "game-hub-ff8aa.firebasestorage.app",
   messagingSenderId: "586559578902",
-  appId: "1:586559578902:web:2c9029761ef876856aa637"
+  appId: "1:586559578902:web:2c9029761ef876856aa637",
 };
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -352,7 +352,6 @@ const RulesModal = ({ onClose }) => {
   );
 };
 
-// UPDATED MODAL with Host Button logic
 const LeaveConfirmModal = ({
   onConfirm,
   onCancel,
@@ -409,7 +408,7 @@ export default function ConspiracyGame() {
   const [view, setView] = useState("menu");
   const [playerName, setPlayerName] = useState("");
   const [roomCode, setRoomCode] = useState("");
-  
+  const [roomId, setRoomId] = useState(null);
   const [gameState, setGameState] = useState(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -417,11 +416,6 @@ export default function ConspiracyGame() {
   const [showRules, setShowRules] = useState(false);
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
   const [showLogHistory, setShowLogHistory] = useState(false);
-
-  // PERSISTENCE FIX: Load room ID from local storage
-  const [roomId, setRoomId] = useState(
-    localStorage.getItem("game_room_id") || ""
-  );
   const [isMaintenance, setIsMaintenance] = useState(false);
 
   useEffect(() => {
@@ -436,6 +430,21 @@ export default function ConspiracyGame() {
     const unsubscribe = onAuthStateChanged(auth, (u) => setUser(u));
     return () => unsubscribe();
   }, []);
+
+  // --- NEW: RESTORE SESSION FROM LOCALSTORAGE ---
+  useEffect(() => {
+    // Only try to restore if we are logged in and in the menu
+    if (user && view === "menu") {
+      const savedRoomId = localStorage.getItem("conspiracy_room_id");
+      const savedPlayerName = localStorage.getItem("conspiracy_player_name");
+
+      if (savedRoomId && savedPlayerName) {
+        setLoading(true); // Show loading while we reconnect
+        setPlayerName(savedPlayerName);
+        setRoomId(savedRoomId); // Setting this triggers the onSnapshot below
+      }
+    }
+  }, [user, view]);
 
   useEffect(() => {
     if (!roomId || !user) return;
@@ -459,20 +468,23 @@ export default function ConspiracyGame() {
           else if (data.status === "playing" || data.status === "finished")
             setView("game");
           else setView("lobby");
+          setLoading(false); // Valid room found, stop loading
         } else {
+          // Room does not exist or was closed
           setRoomId(null);
           setView("menu");
           setError("Room closed or does not exist.");
+          setLoading(false);
+          // Clean up storage so we don't loop
+          localStorage.removeItem("conspiracy_room_id");
+          localStorage.removeItem("conspiracy_player_name");
         }
       },
       (err) => console.error(err)
     );
     return () => unsubscribe();
   }, [roomId, user]);
-  
-  // ... existing auth useEffect ...
 
-  // --- ADD THIS EFFECT ---
   useEffect(() => {
     const unsub = onSnapshot(doc(db, "game_hub_settings", "config"), (doc) => {
       if (doc.exists()) {
@@ -487,7 +499,6 @@ export default function ConspiracyGame() {
     return () => unsub();
   }, []);
 
-  // --- ADD THIS BLOCK ---
   if (isMaintenance) {
     return (
       <div className="min-h-screen bg-gray-950 flex flex-col items-center justify-center text-white p-4 text-center">
@@ -498,13 +509,11 @@ export default function ConspiracyGame() {
           />
           <h1 className="text-3xl font-bold mb-2">Under Maintenance</h1>
           <p className="text-gray-400">
-            The Council is in a closed session. No plots can be hatched at this time.
+            The Council is in a closed session. No plots can be hatched at this
+            time.
           </p>
         </div>
-        {/* Add Spacing Between Boxes */}
         <div className="h-8"></div>
-
-        {/* Clickable Second Card */}
         <a href="https://rawfidkshuvo.github.io/gamehub/">
           <div className="flex items-center justify-center gap-3 mb-2">
             <div className="text-center pb-12 animate-pulse">
@@ -518,8 +527,6 @@ export default function ConspiracyGame() {
       </div>
     );
   }
-
-  // ... existing code: if (view === "menu") { ...
 
   const createRoom = async () => {
     if (!user || !playerName.trim()) return setError("Enter a nickname first.");
@@ -552,12 +559,14 @@ export default function ConspiracyGame() {
         doc(db, "artifacts", appId, "public", "data", "rooms", newRoomId),
         roomData
       );
+      // --- NEW: SAVE TO STORAGE ---
+      localStorage.setItem("conspiracy_room_id", newRoomId);
+      localStorage.setItem("conspiracy_player_name", playerName);
+
       setRoomId(newRoomId);
     } catch (e) {
       setError("Failed to create room.");
     }
-    setRoomId(newId);
-    localStorage.setItem("game_room_id", newId); // Persist
     setLoading(false);
   };
 
@@ -587,7 +596,14 @@ export default function ConspiracyGame() {
       if (!snap.exists()) throw new Error("Room not found.");
       const data = snap.data();
       if (data.players.length >= data.maxPlayers) throw new Error("Room full.");
-      if (data.status !== "lobby") throw new Error("Game started.");
+      if (
+        data.status !== "lobby" &&
+        !data.players.find((p) => p.id === user.uid)
+      ) {
+        // Only allow join during game if it's a reconnect (though the storage logic handles reconnects)
+        throw new Error("Game started.");
+      }
+
       const exists = data.players.find((p) => p.id === user.uid);
       if (!exists) {
         await updateDoc(roomRef, {
@@ -601,11 +617,15 @@ export default function ConspiracyGame() {
           }),
         });
       }
+
+      // --- NEW: SAVE TO STORAGE ---
+      localStorage.setItem("conspiracy_room_id", roomCode);
+      localStorage.setItem("conspiracy_player_name", playerName);
+
       setRoomId(roomCode);
     } catch (e) {
       setError(e.message);
     }
-    localStorage.setItem("game_room_id", roomCode); // Persist
     setLoading(false);
   };
 
@@ -640,8 +660,12 @@ export default function ConspiracyGame() {
     } catch (e) {
       console.error("Error leaving room", e);
     }
-    setRoomId("");
-    localStorage.removeItem("game_room_id");
+
+    // --- NEW: CLEAR STORAGE ---
+    localStorage.removeItem("conspiracy_room_id");
+    localStorage.removeItem("conspiracy_player_name");
+
+    setRoomId(null);
     setView("menu");
     setShowLeaveConfirm(false);
   };
@@ -709,7 +733,6 @@ export default function ConspiracyGame() {
     );
   };
 
-  // --- NEW: Return To Lobby Logic ---
   const returnToLobby = async () => {
     if (!gameState || gameState.hostId !== user.uid) return;
 
@@ -726,7 +749,7 @@ export default function ConspiracyGame() {
       await updateDoc(
         doc(db, "artifacts", appId, "public", "data", "rooms", roomId),
         {
-          status: "lobby", // This triggers the view change in your useEffect
+          status: "lobby",
           players: resetPlayers,
           deck: [],
           turnIndex: 0,
@@ -1596,7 +1619,6 @@ export default function ConspiracyGame() {
             <Crown size={20} /> Establish Back Room
           </button>
 
-          {/* UPDATED: Responsive Flex Column for Mobile */}
           <div className="flex flex-col sm:flex-row gap-2 mb-4">
             <input
               className="w-full sm:flex-1 bg-black/50 border border-gray-600 p-3 rounded text-white placeholder-gray-500 uppercase font-mono tracking-wider focus:border-purple-500 outline-none"
@@ -1633,7 +1655,6 @@ export default function ConspiracyGame() {
 
         <div className="z-10 w-full max-w-lg bg-gray-900/90 backdrop-blur p-8 rounded-2xl border border-purple-900/50 shadow-2xl">
           <div className="flex justify-between items-center mb-8 border-b border-gray-700 pb-4">
-            {/* UPDATED: Renamed Lobby to Back Room */}
             <h2 className="text-2xl font-serif text-purple-400">
               Back Room:{" "}
               <span className="text-white font-mono">{gameState.id}</span>
@@ -1743,7 +1764,6 @@ export default function ConspiracyGame() {
             onConfirm={handleLeaveRoom}
             onCancel={() => setShowLeaveConfirm(false)}
             isHost={gameState?.hostId === user?.uid}
-            // onReturnToLobby prop removed for Lobby View
           />
         )}
       </div>
@@ -1853,7 +1873,6 @@ export default function ConspiracyGame() {
             <span className="font-serif text-purple-500 font-bold tracking-wider hidden md:block">
               CONSPIRACY
             </span>
-            {/* UPDATED: Changed Room ID to 'Back Room' */}
             <span className="text-xs text-gray-500 bg-black/50 px-2 py-1 rounded">
               Back Room
             </span>
@@ -1884,8 +1903,6 @@ export default function ConspiracyGame() {
         </div>
 
         <div className="flex-1 relative p-4 flex flex-col z-10 max-w-5xl mx-auto w-full">
-          {/* REMOVED: Large Center Turn Indicator */}
-
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4 z-10">
             {gameState.players.map((p, i) => {
               if (p.id === user.uid) return null;
@@ -1898,7 +1915,7 @@ export default function ConspiracyGame() {
                       : "border-gray-700"
                   } ${p.isEliminated ? "opacity-50 grayscale" : ""} relative`}
                 >
-                  {/* --- NEW: Playing Badge --- */}
+                  {/* Playing Badge */}
                   {gameState.turnIndex === i && !p.isEliminated && (
                     <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-purple-600 text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow-lg animate-pulse border border-purple-400 tracking-wider z-30">
                       PLAYING
@@ -2242,7 +2259,6 @@ export default function ConspiracyGame() {
 
             {isExchanging && (
               <div className="fixed inset-0 bg-black/95 z-50 flex flex-col items-center justify-center p-4">
-                {/* UPDATED: Added max-height and overflow for responsiveness */}
                 <div className="w-full max-w-2xl bg-gray-900 p-6 rounded-2xl border border-emerald-500/50 shadow-2xl max-h-[85vh] overflow-y-auto">
                   <h3 className="text-2xl font-bold mb-2 text-emerald-400 font-serif sticky top-0 bg-gray-900/90 backdrop-blur pb-2 z-10">
                     The Riddler's Exchange
