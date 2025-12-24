@@ -409,7 +409,7 @@ export default function ConspiracyGame() {
   const [view, setView] = useState("menu");
   const [playerName, setPlayerName] = useState("");
   const [roomCode, setRoomCode] = useState("");
-  const [roomId, setRoomId] = useState(null);
+  
   const [gameState, setGameState] = useState(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -417,6 +417,11 @@ export default function ConspiracyGame() {
   const [showRules, setShowRules] = useState(false);
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
   const [showLogHistory, setShowLogHistory] = useState(false);
+
+  // PERSISTENCE FIX: Load room ID from local storage
+  const [roomId, setRoomId] = useState(
+    localStorage.getItem("game_room_id") || ""
+  );
   const [isMaintenance, setIsMaintenance] = useState(false);
 
   useEffect(() => {
@@ -551,6 +556,8 @@ export default function ConspiracyGame() {
     } catch (e) {
       setError("Failed to create room.");
     }
+    setRoomId(newId);
+    localStorage.setItem("game_room_id", newId); // Persist
     setLoading(false);
   };
 
@@ -598,6 +605,7 @@ export default function ConspiracyGame() {
     } catch (e) {
       setError(e.message);
     }
+    localStorage.setItem("game_room_id", roomCode); // Persist
     setLoading(false);
   };
 
@@ -632,7 +640,8 @@ export default function ConspiracyGame() {
     } catch (e) {
       console.error("Error leaving room", e);
     }
-    setRoomId(null);
+    setRoomId("");
+    localStorage.removeItem("game_room_id");
     setView("menu");
     setShowLeaveConfirm(false);
   };
