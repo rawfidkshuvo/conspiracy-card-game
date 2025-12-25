@@ -1709,7 +1709,18 @@ export default function ConspiracyGame() {
           </button>
         </div>
         <div className="absolute bottom-4 text-slate-600 text-xs text-center">
-          Board game Collection by RAWFID K SHUVO . <br /> Inspired by Coup. <br /> A tribute game.
+          Inspired by Sea, Salt & Paper. A tribute game.
+          <br />
+          Developed by <strong>RAWFID K SHUVO</strong>. Visit{" "}
+          <a
+            href="https://your-link-here.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-500 underline hover:text-blue-600"
+          >
+            GAMEHUB
+          </a>{" "}
+          for more games.
         </div>
       </div>
     );
