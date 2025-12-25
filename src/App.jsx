@@ -1709,7 +1709,7 @@ export default function ConspiracyGame() {
           </button>
         </div>
         <div className="absolute bottom-4 text-slate-600 text-xs text-center">
-          Inspired by Coup. <br /> A tribute game.
+          Board game Collection by RAWFID K SHUVO . <br /> Inspired by Coup. <br /> A tribute game.
         </div>
       </div>
     );
