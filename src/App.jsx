@@ -1709,7 +1709,7 @@ export default function ConspiracyGame() {
           </button>
         </div>
         <div className="absolute bottom-4 text-slate-600 text-xs text-center">
-          Inspired by Sea, Salt & Paper. A tribute game.
+          Inspired by Coup. A tribute game.
           <br />
           Developed by <strong>RAWFID K SHUVO</strong>. Visit{" "}
           <a
