@@ -1713,10 +1713,10 @@ export default function ConspiracyGame() {
           <br />
           Developed by <strong>RAWFID K SHUVO</strong>. Visit{" "}
           <a
-            href="https://your-link-here.com"
+            href="https://rawfidkshuvo.github.io/gamehub/"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-blue-500 underline hover:text-blue-600"
+            className="text-purple-500 underline hover:text-purple-600"
           >
             GAMEHUB
           </a>{" "}
