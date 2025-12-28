@@ -280,7 +280,7 @@ const RulesModal = ({ onClose }) => {
             <div className="space-y-4 animate-in fade-in">
               <div className="p-4 bg-gray-800 rounded-lg border-l-4 border-green-500">
                 <h4 className="font-bold text-white mb-2">
-                  Safe Actions (Unblockable!)
+                  Safe Actions (Unblockable and Unchallengeable)
                 </h4>
                 <ul className="list-disc pl-5 text-sm space-y-1">
                   <li>
@@ -293,7 +293,7 @@ const RulesModal = ({ onClose }) => {
               </div>
               <div className="p-4 bg-gray-800 rounded-lg border-l-4 border-purple-500">
                 <h4 className="font-bold text-white mb-2">
-                  Challengeable/Role Actions (Lie about these!)
+                  Unsafe/Role Actions (Can LIE about these! Challengeable and Blockable)
                 </h4>
                 <ul className="list-disc pl-5 text-sm space-y-1">
                   <li>
