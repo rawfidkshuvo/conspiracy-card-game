@@ -279,25 +279,26 @@ const RulesModal = ({ onClose }) => {
           {tab === "actions" && (
             <div className="space-y-4 animate-in fade-in">
               <div className="p-4 bg-gray-800 rounded-lg border-l-4 border-green-500">
-                <h4 className="font-bold text-white mb-2">Safe Actions</h4>
-                <div className="text-sm space-y-1">
-                  <p>
-                    <strong>Earn:</strong> +1 Coin. (Unblockable)
-                  </p>
-                  <p>
-                    <strong>Export:</strong> +2 Coins. (Blocked by Hero)
-                  </p>
-                  <p>
+                <h4 className="font-bold text-white mb-2">
+                  Safe Actions (Unblockable!)
+                </h4>
+                <ul className="list-disc pl-5 text-sm space-y-1">
+                  <li>
+                    <strong>Earn:</strong> +1 Coin.
+                  </li>
+                  <li>
                     <strong>Kill:</strong> Pay 7 coins to eliminate a life.
-                    (Unblockable)
-                  </p>
-                </div>
+                  </li>
+                </ul>
               </div>
               <div className="p-4 bg-gray-800 rounded-lg border-l-4 border-purple-500">
                 <h4 className="font-bold text-white mb-2">
-                  Role Actions (Lie about these!)
+                  Challengeable/Role Actions (Lie about these!)
                 </h4>
                 <ul className="list-disc pl-5 text-sm space-y-1">
+                  <li>
+                    <strong>Export:</strong> +2 Coins.
+                  </li>
                   <li>
                     <strong>Hero Bonus:</strong> +3 Coins.
                   </li>
