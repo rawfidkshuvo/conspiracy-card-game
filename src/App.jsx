@@ -293,7 +293,8 @@ const RulesModal = ({ onClose }) => {
               </div>
               <div className="p-4 bg-gray-800 rounded-lg border-l-4 border-purple-500">
                 <h4 className="font-bold text-white mb-2">
-                  Unsafe/Role Actions (Can LIE about these! Challengeable and Blockable)
+                  Unsafe/Role Actions (Can LIE about these! Challengeable and
+                  Blockable)
                 </h4>
                 <ul className="list-disc pl-5 text-sm space-y-1">
                   <li>
@@ -1987,9 +1988,12 @@ export default function ConspiracyGame() {
               <BookOpen size={18} />
             </button>
             <button
-              onClick={() => setShowLogHistory(true)}
-              className="p-2 hover:bg-gray-800 rounded text-gray-400"
-              title="History"
+              onClick={() => setShowLogHistory(!showLogHistory)}
+              className={`p-2 rounded-full ${
+                showLogHistory
+                  ? "bg-green-900 text-green-400"
+                  : "text-gray-400 hover:bg-gray-800"
+              }`}
             >
               <History size={18} />
             </button>
@@ -2121,9 +2125,6 @@ export default function ConspiracyGame() {
 
                 {/* Ready Check Section */}
                 <div className="w-full max-w-sm mb-6 bg-gray-900/50 rounded-lg p-4 border border-gray-700">
-                  <div className="text-sm text-gray-400 mb-3 uppercase tracking-wider text-center">
-                    Readiness Check
-                  </div>
                   <div className="flex flex-wrap justify-center gap-2 mb-4">
                     {gameState.players.map((p) => (
                       <div
@@ -2642,13 +2643,13 @@ export default function ConspiracyGame() {
           />
         )}
         {showLogHistory && (
-          <div className="fixed inset-0 bg-black/90 z-[100] flex items-center justify-center p-4">
+          <div className="fixed top-16 right-4 w-64 max-h-60 bg-gray-900/95 border border-gray-700 rounded-xl z-[155] overflow-y-auto p-2 shadow-2xl">
             <div className="bg-gray-900 rounded-2xl w-full max-w-md h-[70vh] flex flex-col border border-gray-700 shadow-2xl">
               <div className="p-4 border-b border-gray-800 flex justify-between items-center bg-gray-950 rounded-t-2xl">
                 <h3 className="font-bold text-white flex items-center gap-2 font-serif">
                   <History size={18} className="text-purple-500" /> Mission Log
                 </h3>
-                <button onClick={() => setShowLogHistory(false)}>
+                <button onClick={() => setShowLogHistory(!showLogHistory)}>
                   <X className="text-gray-400 hover:text-white" />
                 </button>
               </div>
