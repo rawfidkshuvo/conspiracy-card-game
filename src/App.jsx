@@ -1717,7 +1717,7 @@ export default function ConspiracyGame() {
             onClick={() => setShowRules(true)}
             className="w-full text-sm text-gray-400 hover:text-white flex items-center justify-center gap-2 py-2"
           >
-            <BookOpen size={16} /> How to play
+            <BookOpen size={16} /> Archive of Secrets
           </button>
         </div>
         <div className="absolute bottom-4 text-slate-600 text-xs text-center">
