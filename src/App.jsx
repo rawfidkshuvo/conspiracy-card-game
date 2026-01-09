@@ -412,7 +412,7 @@ const ConspiracyLogo = () => (
 
 const ConspiracyLogoBig = () => (
   <div className="flex items-center justify-center gap-1 opacity-40 mt-auto pb-2 pt-2 relative z-10">
-    <Eye size={20} className="text-purple-500" />
+    <Eye size={22} className="text-purple-500" />
     <span className="text-[20px] font-black tracking-widest text-purple-500 uppercase">
       CONSPIRACY
     </span>
