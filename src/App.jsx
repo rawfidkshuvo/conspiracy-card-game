@@ -410,6 +410,15 @@ const ConspiracyLogo = () => (
   </div>
 );
 
+const ConspiracyLogoBig = () => (
+  <div className="flex items-center justify-center gap-1 opacity-40 mt-auto pb-2 pt-2 relative z-10">
+    <Eye size={20} className="text-purple-500" />
+    <span className="text-[20px] font-black tracking-widest text-purple-500 uppercase">
+      CONSPIRACY
+    </span>
+  </div>
+);
+
 export default function ConspiracyGame() {
   const [user, setUser] = useState(null);
   const [view, setView] = useState("menu");
@@ -1686,7 +1695,7 @@ export default function ConspiracyGame() {
             disabled={loading}
             className="w-full bg-gradient-to-r from-purple-700 to-purple-600 hover:from-purple-600 hover:to-purple-500 p-4 rounded font-bold mb-4 flex items-center justify-center gap-2 border border-purple-500/30 shadow-[0_0_15px_rgba(147,51,234,0.2)] transition-all"
           >
-            <Crown size={20} /> Establish Back Room
+            <Crown size={20} /> Establish Dark Chamber
           </button>
 
           <div className="flex flex-col sm:flex-row gap-2 mb-4">
@@ -1736,7 +1745,7 @@ export default function ConspiracyGame() {
     return (
       <div className="min-h-screen bg-gray-950 text-white flex flex-col items-center justify-center p-6 relative">
         <FloatingBackground />
-
+        <ConspiracyLogoBig />
         <div className="z-10 w-full max-w-lg bg-gray-900/90 backdrop-blur p-8 rounded-2xl border border-purple-900/50 shadow-2xl">
           <div className="flex justify-between items-center mb-8 border-b border-gray-700 pb-4">
             <h2 className="text-2xl font-serif text-purple-400">
