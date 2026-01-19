@@ -680,7 +680,10 @@ export default function ConspiracyGame() {
 
     if (isHost) {
       // Close the room for everyone
-      await deleteDoc(roomRef);
+      await updateDoc(
+        doc(db, "artifacts", appId, "public", "data", "rooms", roomId),
+        { status: "closed" }
+      );
     } else {
       // Regular player leaving logic
       const updatedPlayers = gameState.players.filter((p) => p.id !== user.uid);
