@@ -679,13 +679,16 @@ export default function ConspiracyGame() {
     const isHost = gameState.hostId === user.uid;
 
     if (isHost) {
-      // Close the room for everyone
-      await updateDoc(
-        doc(db, "artifacts", appId, "public", "data", "rooms", roomId),
-        { status: "closed" }
-      );
+      // DELETE the room doc instead of just closing it
+      try {
+        await deleteDoc(
+          doc(db, "artifacts", appId, "public", "data", "rooms", roomId)
+        );
+      } catch (e) {
+        console.error("Error deleting room:", e);
+      }
     } else {
-      // Regular player leaving logic
+      // Regular player leaving logic (Keep this part exactly as it was)
       const updatedPlayers = gameState.players.filter((p) => p.id !== user.uid);
       let status = gameState.status;
       if (status === "playing" && updatedPlayers.length < 2)
@@ -718,6 +721,7 @@ export default function ConspiracyGame() {
       }
     }
 
+    // Local Cleanup
     localStorage.removeItem("conspiracy_room_id");
     localStorage.removeItem("conspiracy_player_name");
 
