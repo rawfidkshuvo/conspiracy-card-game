@@ -179,7 +179,7 @@ const shuffle = (array) => {
 
 const FloatingBackground = () => (
   <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
-    <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-gray-900 via-gray-900 to-black" />
+    <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_center,var(--tw-gradient-stops))] from-gray-900 via-gray-900 to-black" />
     <div className="absolute top-0 left-0 w-full h-full bg-purple-500/5 mix-blend-overlay" />
     <div
       className="absolute inset-0 opacity-10"
@@ -208,7 +208,7 @@ const RulesModal = ({ onClose }) => {
   );
 
   return (
-    <div className="fixed inset-0 bg-black/90 z-[100] flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-black/90 z-100 flex items-center justify-center p-4">
       <div className="bg-gray-900 rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden border border-purple-500/30 shadow-2xl flex flex-col">
         <div className="p-6 border-b border-gray-800 flex justify-between items-center bg-gray-950">
           <h2 className="text-2xl font-bold text-white flex items-center gap-2 font-serif tracking-wider">
@@ -363,7 +363,7 @@ const LeaveConfirmModal = ({
   isHost,
   onReturnToLobby,
 }) => (
-  <div className="fixed inset-0 bg-black/90 z-[200] flex items-center justify-center p-4 animate-in fade-in">
+  <div className="fixed inset-0 bg-black/90 z-200 flex items-center justify-center p-4 animate-in fade-in">
     <div className="bg-gray-800 rounded-xl border border-gray-700 p-6 max-w-sm w-full text-center shadow-2xl">
       <h3 className="text-xl font-bold text-white mb-2">Abandon Conspiracy?</h3>
       <p className="text-gray-400 mb-6 text-sm">
@@ -1674,7 +1674,7 @@ export default function ConspiracyGame() {
             size={64}
             className="text-purple-500 mx-auto mb-4 animate-bounce drop-shadow-[0_0_15px_rgba(168,85,247,0.5)]"
           />
-          <h1 className="text-5xl md:text-7xl font-black text-transparent bg-clip-text bg-gradient-to-b from-purple-300 to-purple-600 font-serif tracking-widest drop-shadow-md">
+          <h1 className="text-5xl md:text-7xl font-black text-transparent bg-clip-text bg-linear-to-b from-purple-300 to-purple-600 font-serif tracking-widest drop-shadow-md">
             CONSPIRACY
           </h1>
           <p className="text-white-400/60 tracking-[0.3em] uppercase mt-2">
@@ -1697,7 +1697,7 @@ export default function ConspiracyGame() {
           <button
             onClick={createRoom}
             disabled={loading}
-            className="w-full bg-gradient-to-r from-purple-700 to-purple-600 hover:from-purple-600 hover:to-purple-500 p-4 rounded font-bold mb-4 flex items-center justify-center gap-2 border border-purple-500/30 shadow-[0_0_15px_rgba(147,51,234,0.2)] transition-all"
+            className="w-full bg-linear-to-r from-purple-700 to-purple-600 hover:from-purple-600 hover:to-purple-500 p-4 rounded font-bold mb-4 flex items-center justify-center gap-2 border border-purple-500/30 shadow-[0_0_15px_rgba(147,51,234,0.2)] transition-all"
           >
             <Crown size={20} /> Establish Dark Chamber
           </button>
@@ -2072,7 +2072,7 @@ export default function ConspiracyGame() {
                         className={`w-6 h-9 rounded border ${
                           c.flipped
                             ? "bg-black border-gray-800"
-                            : "bg-gradient-to-br from-purple-900 to-indigo-900 border-purple-700"
+                            : "bg-linear-to-br from-purple-900 to-indigo-900 border-purple-700"
                         } flex items-center justify-center`}
                       >
                         {c.flipped ? (
@@ -2656,7 +2656,7 @@ export default function ConspiracyGame() {
           />
         )}
         {showLogHistory && (
-          <div className="fixed top-16 right-4 w-64 max-h-60 bg-gray-900/95 border border-gray-700 rounded-xl z-[155] overflow-y-auto p-2 shadow-2xl">
+          <div className="fixed top-16 right-4 w-64 max-h-60 bg-gray-900/95 border border-gray-700 rounded-xl z-155 overflow-y-auto p-2 shadow-2xl">
             <div className="bg-gray-900 rounded-2xl w-full max-w-md h-[70vh] flex flex-col border border-gray-700 shadow-2xl">
               <div className="p-4 border-b border-gray-800 flex justify-between items-center bg-gray-950 rounded-t-2xl">
                 <h3 className="font-bold text-white flex items-center gap-2 font-serif">
