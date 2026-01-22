@@ -422,7 +422,9 @@ const ConspiracyLogoBig = () => (
 export default function ConspiracyGame() {
   const [user, setUser] = useState(null);
   const [view, setView] = useState("menu");
-  const [playerName, setPlayerName] = useState("");
+  const [playerName, setPlayerName] = useState(
+    () => localStorage.getItem("conspiracy_player_name") || ""
+  );
   const [roomCode, setRoomCode] = useState("");
   const [roomId, setRoomId] = useState(null);
   const [gameState, setGameState] = useState(null);
@@ -485,7 +487,6 @@ export default function ConspiracyGame() {
             setView("menu");
             setError("You have been removed from the room.");
             localStorage.removeItem("conspiracy_room_id");
-            localStorage.removeItem("conspiracy_player_name");
             setLoading(false);
             return;
           }
@@ -496,7 +497,6 @@ export default function ConspiracyGame() {
             setView("menu");
             setError("The Host has closed the room.");
             localStorage.removeItem("conspiracy_room_id");
-            localStorage.removeItem("conspiracy_player_name");
             setLoading(false);
             return;
           }
@@ -513,7 +513,6 @@ export default function ConspiracyGame() {
           setError("Room closed or does not exist.");
           setLoading(false);
           localStorage.removeItem("conspiracy_room_id");
-          localStorage.removeItem("conspiracy_player_name");
         }
       },
       (err) => console.error(err)
@@ -723,7 +722,6 @@ export default function ConspiracyGame() {
 
     // Local Cleanup
     localStorage.removeItem("conspiracy_room_id");
-    localStorage.removeItem("conspiracy_player_name");
 
     setRoomId(null);
     setView("menu");
