@@ -768,9 +768,11 @@ export default function ConspiracyGame() {
   const startGame = async () => {
     if (!gameState || gameState.hostId !== user.uid) return;
     if (gameState.players.length < 2) return setError("Need 2+ players.");
+    
     const deck = shuffle([...DECK_TEMPLATE, ...DECK_TEMPLATE]);
     const handSize = gameState.startingCards || 2;
 
+    // 1. Reset Players (Deep Copy)
     const players = gameState.players.map((p) => {
       const hand = [];
       for (let i = 0; i < handSize; i++) {
@@ -781,16 +783,20 @@ export default function ConspiracyGame() {
         coins: 2,
         cards: hand,
         isEliminated: false,
-        ready: false, // Reset ready status on game start
+        ready: false,
       };
     });
+
+    // 2. Calculate Random Start Index
+    const randomStartIndex = Math.floor(Math.random() * players.length);
+
     await updateDoc(
       doc(db, "artifacts", appId, "public", "data", "rooms", roomId),
       {
         status: "playing",
         deck,
         players,
-        turnIndex: 0,
+        turnIndex: randomStartIndex, // <--- CHANGED FROM 0
         turnState: "IDLE",
         logs: arrayUnion({ text: "Game Started!", type: "info" }),
       }
@@ -799,6 +805,7 @@ export default function ConspiracyGame() {
 
   const restartGame = async () => {
     if (!gameState || gameState.hostId !== user.uid) return;
+    
     const deck = shuffle([...DECK_TEMPLATE, ...DECK_TEMPLATE]);
     const handSize = gameState.startingCards || 2;
 
@@ -812,9 +819,12 @@ export default function ConspiracyGame() {
         coins: 2,
         cards: hand,
         isEliminated: false,
-        ready: false, // Reset ready for everyone
+        ready: false,
       };
     });
+
+    // 2. Calculate Random Start Index (Again)
+    const randomStartIndex = Math.floor(Math.random() * players.length);
 
     await updateDoc(
       doc(db, "artifacts", appId, "public", "data", "rooms", roomId),
@@ -822,7 +832,7 @@ export default function ConspiracyGame() {
         status: "playing",
         deck,
         players,
-        turnIndex: 0,
+        turnIndex: randomStartIndex, // <--- CHANGED FROM 0
         turnState: "IDLE",
         logs: [{ text: "Game Restarted!", type: "info" }],
         currentAction: null,
