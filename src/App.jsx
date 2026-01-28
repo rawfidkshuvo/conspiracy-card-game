@@ -45,12 +45,12 @@ import {
 
 // --- Firebase Config & Init ---
 const firebaseConfig = {
-  apiKey: "AIzaSyBjIjK53vVJW1y5RaqEFGSFp0ECVDBEe1o",
-  authDomain: "game-hub-ff8aa.firebaseapp.com",
-  projectId: "game-hub-ff8aa",
-  storageBucket: "game-hub-ff8aa.firebasestorage.app",
-  messagingSenderId: "586559578902",
-  appId: "1:586559578902:web:2c9029761ef876856aa637",
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -524,6 +524,7 @@ export default function ConspiracyGame() {
             setView("menu");
             setError("You have been removed from the room.");
             localStorage.removeItem("conspiracy_room_id");
+            localStorage.removeItem("conspiracy_player_name");
             setLoading(false);
             return;
           }
@@ -534,6 +535,7 @@ export default function ConspiracyGame() {
             setView("menu");
             setError("The Host has closed the room.");
             localStorage.removeItem("conspiracy_room_id");
+            localStorage.removeItem("conspiracy_player_name");
             setLoading(false);
             return;
           }
@@ -550,6 +552,7 @@ export default function ConspiracyGame() {
           setError("Room closed or does not exist.");
           setLoading(false);
           localStorage.removeItem("conspiracy_room_id");
+          localStorage.removeItem("conspiracy_player_name");
         }
       },
       (err) => console.error(err)
@@ -759,6 +762,7 @@ export default function ConspiracyGame() {
 
     // Local Cleanup
     localStorage.removeItem("conspiracy_room_id");
+    localStorage.removeItem("conspiracy_player_name");
 
     setRoomId(null);
     setView("menu");
