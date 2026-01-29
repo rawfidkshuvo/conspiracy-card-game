@@ -464,6 +464,7 @@ export default function ConspiracyGame() {
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
   const [showLogHistory, setShowLogHistory] = useState(false);
   const [isMaintenance, setIsMaintenance] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
 
   //read and fill global name
   const [playerName, setPlayerName] = useState(
@@ -713,17 +714,30 @@ export default function ConspiracyGame() {
   };
 
   const copyToClipboard = () => {
+    const textToCopy = gameState.roomId;
+
+    // Logic to show the popup and hide it after 2 seconds
+    const handleSuccess = () => {
+      setIsCopied(true);
+      setTimeout(() => setIsCopied(false), 2000);
+
+      // Keep your existing global feedback if needed
+      if (triggerFeedback)
+        triggerFeedback("neutral", "COPIED!", "", CheckCircle);
+    };
+
     try {
-      navigator.clipboard.writeText(roomId);
-      triggerFeedback("neutral", "COPIED!", "", CheckCircle);
+      navigator.clipboard.writeText(textToCopy);
+      handleSuccess();
     } catch (e) {
+      // Fallback for older browsers
       const el = document.createElement("textarea");
-      el.value = roomId;
+      el.value = textToCopy;
       document.body.appendChild(el);
       el.select();
       document.execCommand("copy");
       document.body.removeChild(el);
-      triggerFeedback("neutral", "COPIED!", "", CheckCircle);
+      handleSuccess();
     }
   };
 
@@ -1823,13 +1837,27 @@ export default function ConspiracyGame() {
                 Back Room:{" "}
                 <span className="text-white font-mono">{gameState.id}</span>
               </h2>
-              <button
-                onClick={copyToClipboard}
-                className="p-2 hover:bg-white/10 rounded-full transition-colors text-gray-400 hover:text-white"
-                title="Copy Room ID"
-              >
-                <Copy size={16} />
-              </button>
+              {/* 2. Container set to relative for positioning the popup */}
+              <div className="relative">
+                <button
+                  onClick={copyToClipboard}
+                  className="p-2 hover:bg-white/10 rounded-full transition-colors text-gray-400 hover:text-white"
+                >
+                  {/* Optional: Change icon to checkmark when copied */}
+                  {isCopied ? (
+                    <CheckCircle size={16} className="text-green-500" />
+                  ) : (
+                    <Copy size={16} />
+                  )}
+                </button>
+
+                {/* 3. The Copied Popup */}
+                {isCopied && (
+                  <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 bg-green-500 text-black text-xs font-bold px-2 py-1 rounded shadow-lg animate-fade-in-up whitespace-nowrap">
+                    Copied!
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Leave Button stays on the right */}
