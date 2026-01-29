@@ -714,7 +714,7 @@ export default function ConspiracyGame() {
   };
 
   const copyToClipboard = () => {
-    const textToCopy = gameState.roomId;
+    const textToCopy = roomId;
 
     // Logic to show the popup and hide it after 2 seconds
     const handleSuccess = () => {
@@ -1833,7 +1833,7 @@ export default function ConspiracyGame() {
           <div className="flex justify-between items-center mb-8 border-b border-gray-700 pb-4">
             {/* Grouping Title and Copy Button together on the left */}
             <div>
-              <h2 className="text-lg md:text-xl text-green-500 font-bold uppercase">
+              <h2 className="text-lg md:text-xl text-purple-500 font-bold uppercase">
                 Back Room
               </h2>
 
