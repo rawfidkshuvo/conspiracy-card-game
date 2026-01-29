@@ -1834,7 +1834,7 @@ export default function ConspiracyGame() {
             {/* Grouping Title and Copy Button together on the left */}
             <div>
               <h2 className="text-lg md:text-xl text-green-500 font-bold uppercase">
-                Quarantine Zone
+                Back Room
               </h2>
 
               {/* Flex container to align ID and Button side-by-side */}
