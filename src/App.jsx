@@ -608,7 +608,11 @@ export default function ConspiracyGame() {
   const createRoom = async () => {
     if (!user || !playerName.trim()) return setError("Enter a nickname first.");
     setLoading(true);
-    const newRoomId = Math.random().toString(36).substring(2, 8).toUpperCase();
+    const chars = "123456789ABCDEFGHIJKLMNPQRSTUVWXYZ";
+    let newRoomId = "";
+    for (let i = 0; i < 6; i++) {
+      newRoomId += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
 
     const roomData = {
       hostId: user.uid,
