@@ -41,6 +41,7 @@ import {
   Sparkles,
   Trash2, // Added Trash icon
   Users,
+  Copy,
 } from "lucide-react";
 
 // --- Firebase Config & Init ---
@@ -50,7 +51,7 @@ const firebaseConfig = {
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
   storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
   messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -400,8 +401,8 @@ const LeaveConfirmModal = ({
         {isHost && onReturnToLobby
           ? "As Host, you can return everyone to the lobby or leave the game completely."
           : isHost
-          ? "WARNING: Leaving as Host will close the room for everyone."
-          : "Leaving now will forfeit your position in the game."}
+            ? "WARNING: Leaving as Host will close the room for everyone."
+            : "Leaving now will forfeit your position in the game."}
       </p>
       <div className="flex flex-col gap-3">
         {isHost && onReturnToLobby && (
@@ -452,7 +453,7 @@ const ConspiracyLogoBig = () => (
 export default function ConspiracyGame() {
   const [user, setUser] = useState(null);
   const [view, setView] = useState("menu");
-  
+
   const [roomCode, setRoomCode] = useState("");
   const [roomId, setRoomId] = useState(null);
   const [gameState, setGameState] = useState(null);
@@ -466,7 +467,7 @@ export default function ConspiracyGame() {
 
   //read and fill global name
   const [playerName, setPlayerName] = useState(
-    () => localStorage.getItem("gameHub_playerName") || ""
+    () => localStorage.getItem("gameHub_playerName") || "",
   );
   //set global name for all game
   useEffect(() => {
@@ -509,7 +510,7 @@ export default function ConspiracyGame() {
       "public",
       "data",
       "rooms",
-      roomId
+      roomId,
     );
     const unsubscribe = onSnapshot(
       roomRef,
@@ -555,7 +556,7 @@ export default function ConspiracyGame() {
           localStorage.removeItem("conspiracy_player_name");
         }
       },
-      (err) => console.error(err)
+      (err) => console.error(err),
     );
     return () => unsubscribe();
   }, [roomId, user]);
@@ -632,7 +633,7 @@ export default function ConspiracyGame() {
     try {
       await setDoc(
         doc(db, "artifacts", appId, "public", "data", "rooms", newRoomId),
-        roomData
+        roomData,
       );
       localStorage.setItem("conspiracy_room_id", newRoomId);
       localStorage.setItem("conspiracy_player_name", playerName);
@@ -648,7 +649,7 @@ export default function ConspiracyGame() {
     if (!gameState || gameState.hostId !== user.uid) return;
     await updateDoc(
       doc(db, "artifacts", appId, "public", "data", "rooms", roomId),
-      { startingCards: parseInt(cards) }
+      { startingCards: parseInt(cards) },
     );
   };
 
@@ -657,7 +658,7 @@ export default function ConspiracyGame() {
     const updatedPlayers = gameState.players.filter((p) => p.id !== targetId);
     await updateDoc(
       doc(db, "artifacts", appId, "public", "data", "rooms", roomId),
-      { players: updatedPlayers }
+      { players: updatedPlayers },
     );
   };
 
@@ -673,7 +674,7 @@ export default function ConspiracyGame() {
         "public",
         "data",
         "rooms",
-        roomCode
+        roomCode,
       );
       const snap = await getDoc(roomRef);
       if (!snap.exists()) throw new Error("Room not found.");
@@ -711,6 +712,21 @@ export default function ConspiracyGame() {
     setLoading(false);
   };
 
+  const copyToClipboard = () => {
+    try {
+      navigator.clipboard.writeText(roomId);
+      triggerFeedback("neutral", "COPIED!", "", CheckCircle);
+    } catch (e) {
+      const el = document.createElement("textarea");
+      el.value = roomId;
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand("copy");
+      document.body.removeChild(el);
+      triggerFeedback("neutral", "COPIED!", "", CheckCircle);
+    }
+  };
+
   const handleLeaveRoom = async () => {
     if (!roomId || !user || !gameState) return;
 
@@ -721,7 +737,7 @@ export default function ConspiracyGame() {
       // DELETE the room doc instead of just closing it
       try {
         await deleteDoc(
-          doc(db, "artifacts", appId, "public", "data", "rooms", roomId)
+          doc(db, "artifacts", appId, "public", "data", "rooms", roomId),
         );
       } catch (e) {
         console.error("Error deleting room:", e);
@@ -753,7 +769,7 @@ export default function ConspiracyGame() {
             status: status,
             turnIndex: newTurnIndex,
             logs: logs,
-          }
+          },
         );
       } catch (e) {
         console.error("Error leaving room", e);
@@ -772,7 +788,7 @@ export default function ConspiracyGame() {
   const startGame = async () => {
     if (!gameState || gameState.hostId !== user.uid) return;
     if (gameState.players.length < 2) return setError("Need 2+ players.");
-    
+
     const deck = shuffle([...DECK_TEMPLATE, ...DECK_TEMPLATE]);
     const handSize = gameState.startingCards || 2;
 
@@ -803,13 +819,13 @@ export default function ConspiracyGame() {
         turnIndex: randomStartIndex, // <--- CHANGED FROM 0
         turnState: "IDLE",
         logs: arrayUnion({ text: "Game Started!", type: "info" }),
-      }
+      },
     );
   };
 
   const restartGame = async () => {
     if (!gameState || gameState.hostId !== user.uid) return;
-    
+
     const deck = shuffle([...DECK_TEMPLATE, ...DECK_TEMPLATE]);
     const handSize = gameState.startingCards || 2;
 
@@ -840,7 +856,7 @@ export default function ConspiracyGame() {
         turnState: "IDLE",
         logs: [{ text: "Game Restarted!", type: "info" }],
         currentAction: null,
-      }
+      },
     );
   };
 
@@ -869,7 +885,7 @@ export default function ConspiracyGame() {
           logs: [
             { text: "Host returned the group to the lobby.", type: "neutral" },
           ],
-        }
+        },
       );
       setShowLeaveConfirm(false);
     } catch (e) {
@@ -887,7 +903,7 @@ export default function ConspiracyGame() {
       doc(db, "artifacts", appId, "public", "data", "rooms", roomId),
       {
         players: updatedPlayers,
-      }
+      },
     );
   };
 
@@ -921,7 +937,7 @@ export default function ConspiracyGame() {
         currentAction: null,
         players: currentRoomState.players,
         loseReason: null,
-      }
+      },
     );
   };
 
@@ -955,7 +971,7 @@ export default function ConspiracyGame() {
             text: `${player.name} takes Income (+1 coin).`,
             type: "neutral",
           }),
-        }
+        },
       );
       await nextTurn({ ...gameState, players: updatedPlayers });
       return;
@@ -978,7 +994,7 @@ export default function ConspiracyGame() {
             text: `${player.name} killed ${targetName} (-7 coins).`,
             type: "danger",
           }),
-        }
+        },
       );
       return;
     }
@@ -994,7 +1010,7 @@ export default function ConspiracyGame() {
           players: updatedPlayers,
           turnState: "ACTION_PENDING",
           currentAction: actionPayload,
-        }
+        },
       );
       return;
     }
@@ -1005,7 +1021,7 @@ export default function ConspiracyGame() {
       {
         turnState: "ACTION_PENDING",
         currentAction: actionPayload,
-      }
+      },
     );
   };
 
@@ -1024,7 +1040,7 @@ export default function ConspiracyGame() {
         doc(db, "artifacts", appId, "public", "data", "rooms", roomId),
         {
           "currentAction.votes": newVotes,
-        }
+        },
       );
     }
   };
@@ -1034,7 +1050,7 @@ export default function ConspiracyGame() {
 
     const action = ACTIONS[gameState.currentAction.type];
     const actor = gameState.players.find(
-      (p) => p.id === gameState.currentAction.actorId
+      (p) => p.id === gameState.currentAction.actorId,
     );
     const updatedPlayers = [...gameState.players];
     let logMsg = "";
@@ -1048,7 +1064,7 @@ export default function ConspiracyGame() {
       logMsg = `${actor.name} collects Hero Bonus and gains 3 coins.`;
     } else if (gameState.currentAction.type === "STEAL") {
       const targetIndex = updatedPlayers.findIndex(
-        (p) => p.id === gameState.currentAction.targetId
+        (p) => p.id === gameState.currentAction.targetId,
       );
       const targetName = updatedPlayers[targetIndex].name;
       const stolen = Math.min(updatedPlayers[targetIndex].coins, 2);
@@ -1057,7 +1073,7 @@ export default function ConspiracyGame() {
       logMsg = `${actor.name} steals ${stolen} coins from ${targetName}.`;
     } else if (gameState.currentAction.type === "STAB") {
       const targetName = gameState.players.find(
-        (p) => p.id === gameState.currentAction.targetId
+        (p) => p.id === gameState.currentAction.targetId,
       ).name;
       await updateDoc(
         doc(db, "artifacts", appId, "public", "data", "rooms", roomId),
@@ -1070,7 +1086,7 @@ export default function ConspiracyGame() {
             text: `${actor.name} Assassinated ${targetName}!`,
             type: "danger",
           }),
-        }
+        },
       );
       return;
     } else if (gameState.currentAction.type === "EXCHANGE") {
@@ -1087,7 +1103,7 @@ export default function ConspiracyGame() {
             text: `${actor.name} examines the deck (Exchange).`,
             type: "neutral",
           }),
-        }
+        },
       );
       return;
     }
@@ -1097,7 +1113,7 @@ export default function ConspiracyGame() {
       {
         players: updatedPlayers,
         logs: arrayUnion({ text: logMsg, type: "success" }),
-      }
+      },
     );
     await nextTurn({ ...gameState, players: updatedPlayers });
   };
@@ -1105,7 +1121,7 @@ export default function ConspiracyGame() {
   const handleBlock = async (blockerId, claimCard) => {
     const blockerName = gameState.players.find((p) => p.id === blockerId).name;
     const actorName = gameState.players.find(
-      (p) => p.id === gameState.currentAction.actorId
+      (p) => p.id === gameState.currentAction.actorId,
     ).name;
     const actionName = ACTIONS[gameState.currentAction.type].name;
 
@@ -1123,7 +1139,7 @@ export default function ConspiracyGame() {
           text: `${blockerName} blocks ${actorName}'s ${actionName} claiming ${claimCard}!`,
           type: "warning",
         }),
-      }
+      },
     );
   };
 
@@ -1141,7 +1157,7 @@ export default function ConspiracyGame() {
             text: "Block Accepted. Action Failed (Coins lost).",
             type: "info",
           }),
-        }
+        },
       );
       await nextTurn({ ...gameState });
     } else {
@@ -1149,7 +1165,7 @@ export default function ConspiracyGame() {
         doc(db, "artifacts", appId, "public", "data", "rooms", roomId),
         {
           "currentAction.votes": newVotes,
-        }
+        },
       );
     }
   };
@@ -1163,7 +1179,7 @@ export default function ConspiracyGame() {
       ? gameState.currentAction.blockClaim
       : ACTIONS[gameState.currentAction.type].claim;
     const challengerName = gameState.players.find(
-      (p) => p.id === challengerId
+      (p) => p.id === challengerId,
     ).name;
     const accusedName = gameState.players.find((p) => p.id === accusedId).name;
 
@@ -1178,7 +1194,7 @@ export default function ConspiracyGame() {
           text: `${challengerName} challenges ${accusedName}'s claim of ${claim}!`,
           type: "danger",
         }),
-      }
+      },
     );
   };
 
@@ -1190,13 +1206,13 @@ export default function ConspiracyGame() {
       .map((c, i) => ({ ...c, index: i }))
       .filter((c) => !c.flipped);
     const actor = gameState.players.find(
-      (p) => p.id === gameState.currentAction.actorId
+      (p) => p.id === gameState.currentAction.actorId,
     );
 
     let targetName = "";
     if (gameState.currentAction.targetId) {
       const t = gameState.players.find(
-        (p) => p.id === gameState.currentAction.targetId
+        (p) => p.id === gameState.currentAction.targetId,
       );
       targetName = t ? t.name : "Target";
     }
@@ -1220,7 +1236,7 @@ export default function ConspiracyGame() {
 
       if (act.type === "STEAL") {
         const targetIdx = updatedPlayers.findIndex(
-          (p) => p.id === act.targetId
+          (p) => p.id === act.targetId,
         );
         const stolen = Math.min(updatedPlayers[targetIdx].coins, 2);
         updatedPlayers[targetIdx].coins -= stolen;
@@ -1290,7 +1306,7 @@ export default function ConspiracyGame() {
 
     await updateDoc(
       doc(db, "artifacts", appId, "public", "data", "rooms", roomId),
-      updateData
+      updateData,
     );
     if (isGameOver) return;
     if (nextState === "LOSE_CARD") return;
@@ -1311,7 +1327,7 @@ export default function ConspiracyGame() {
                 text: "Assassination continues... Target must lose a life.",
                 type: "danger",
               }),
-            }
+            },
           );
           return;
         } else {
@@ -1322,7 +1338,7 @@ export default function ConspiracyGame() {
                 text: "Target eliminated. Assassination complete.",
                 type: "neutral",
               }),
-            }
+            },
           );
           await nextTurn({ ...gameState, players: updatedPlayers });
           return;
@@ -1337,7 +1353,7 @@ export default function ConspiracyGame() {
             deck,
             tempCards: newCards,
             "currentAction.actionPending": false,
-          }
+          },
         );
         return;
       }
@@ -1352,15 +1368,15 @@ export default function ConspiracyGame() {
     const hasCard = revealedCard.type === requiredCard;
 
     const actor = gameState.players.find(
-      (p) => p.id === gameState.currentAction.actorId
+      (p) => p.id === gameState.currentAction.actorId,
     );
     const challenger = gameState.players.find(
-      (p) => p.id === gameState.challengerId
+      (p) => p.id === gameState.challengerId,
     );
     let targetName = "";
     if (gameState.currentAction.targetId) {
       targetName = gameState.players.find(
-        (p) => p.id === gameState.currentAction.targetId
+        (p) => p.id === gameState.currentAction.targetId,
       ).name;
     }
 
@@ -1494,7 +1510,7 @@ export default function ConspiracyGame() {
 
     await updateDoc(
       doc(db, "artifacts", appId, "public", "data", "rooms", roomId),
-      updateData
+      updateData,
     );
     if (isGameOver || nextState === "LOSE_CARD") return;
 
@@ -1508,7 +1524,7 @@ export default function ConspiracyGame() {
           deck: d,
           tempCards: nc,
           "currentAction.actionPending": false,
-        }
+        },
       );
     } else {
       await nextTurn({ ...gameState, players: updatedPlayers });
@@ -1555,7 +1571,7 @@ export default function ConspiracyGame() {
 
       await updateDoc(
         doc(db, "artifacts", appId, "public", "data", "rooms", roomId),
-        updateData
+        updateData,
       );
       return;
     }
@@ -1564,7 +1580,7 @@ export default function ConspiracyGame() {
       if (gameState.currentAction.type === "EXCHANGE") {
         await updateDoc(
           doc(db, "artifacts", appId, "public", "data", "rooms", roomId),
-          updateData
+          updateData,
         );
         const deck = [...gameState.deck];
         const newCards = [deck.pop(), deck.pop()];
@@ -1575,7 +1591,7 @@ export default function ConspiracyGame() {
             deck,
             tempCards: newCards,
             "currentAction.actionPending": false,
-          }
+          },
         );
         return;
       }
@@ -1593,7 +1609,7 @@ export default function ConspiracyGame() {
           updateData["currentAction.actionPending"] = false;
           await updateDoc(
             doc(db, "artifacts", appId, "public", "data", "rooms", roomId),
-            updateData
+            updateData,
           );
           return;
         } else {
@@ -1607,7 +1623,7 @@ export default function ConspiracyGame() {
     }
     await updateDoc(
       doc(db, "artifacts", appId, "public", "data", "rooms", roomId),
-      updateData
+      updateData,
     );
     await nextTurn({ ...gameState, players: updatedPlayers });
   };
@@ -1627,7 +1643,7 @@ export default function ConspiracyGame() {
     const pool = [...currentActiveTypes, ...gameState.tempCards];
     const selectedTypes = exchangeSelection.map((index) => pool[index]);
     const rejectedTypes = pool.filter(
-      (_, index) => !exchangeSelection.includes(index)
+      (_, index) => !exchangeSelection.includes(index),
     );
     const existingFlipped = me.cards.filter((c) => c.flipped);
     const newActive = selectedTypes.map((type) => ({ type, flipped: false }));
@@ -1642,7 +1658,7 @@ export default function ConspiracyGame() {
         turnState: "IDLE",
         tempCards: null,
         currentAction: null,
-      }
+      },
     );
     await nextTurn({ ...gameState, players: updatedPlayers });
     setExchangeSelection([]);
@@ -1801,10 +1817,22 @@ export default function ConspiracyGame() {
         <ConspiracyLogoBig />
         <div className="z-10 w-full max-w-lg bg-gray-900/90 backdrop-blur p-8 rounded-2xl border border-purple-900/50 shadow-2xl">
           <div className="flex justify-between items-center mb-8 border-b border-gray-700 pb-4">
-            <h2 className="text-2xl font-serif text-purple-400">
-              Back Room:{" "}
-              <span className="text-white font-mono">{gameState.id}</span>
-            </h2>
+            {/* Grouping Title and Copy Button together on the left */}
+            <div className="flex items-center gap-2">
+              <h2 className="text-2xl font-serif text-purple-400">
+                Back Room:{" "}
+                <span className="text-white font-mono">{gameState.id}</span>
+              </h2>
+              <button
+                onClick={copyToClipboard}
+                className="p-2 hover:bg-white/10 rounded-full transition-colors text-gray-400 hover:text-white"
+                title="Copy Room ID"
+              >
+                <Copy size={16} />
+              </button>
+            </div>
+
+            {/* Leave Button stays on the right */}
             <button
               onClick={() => setShowLeaveConfirm(true)}
               className="p-2 bg-red-900/30 hover:bg-red-900/50 rounded text-red-300"
@@ -2005,7 +2033,7 @@ export default function ConspiracyGame() {
     let loseCardSub = "";
     if (gameState.turnState === "LOSE_CARD") {
       const loserPlayer = gameState.players.find(
-        (p) => p.id === gameState.loserId
+        (p) => p.id === gameState.loserId,
       );
       const loserName = loserPlayer ? loserPlayer.name : "Player";
       if (gameState.loseReason === "challenge") {
@@ -2395,7 +2423,7 @@ export default function ConspiracyGame() {
                   <span className="font-bold text-white">
                     {
                       gameState.players.find(
-                        (p) => p.id === gameState.currentAction.blockerId
+                        (p) => p.id === gameState.currentAction.blockerId,
                       ).name
                     }
                   </span>{" "}
@@ -2464,7 +2492,7 @@ export default function ConspiracyGame() {
                       className={`mt-8 text-sm uppercase tracking-wider font-bold transition-all p-2 rounded ${
                         me.cards.some(
                           (c) =>
-                            !c.flipped && c.type === gameState.challengedCard
+                            !c.flipped && c.type === gameState.challengedCard,
                         )
                           ? "text-gray-600 hover:text-gray-400"
                           : "text-red-400 hover:text-white hover:bg-red-900 border border-transparent hover:border-red-500"
@@ -2479,7 +2507,7 @@ export default function ConspiracyGame() {
                     <span className="text-white font-bold">
                       {
                         gameState.players.find(
-                          (p) => p.id === gameState.accusedId
+                          (p) => p.id === gameState.accusedId,
                         )?.name
                       }
                     </span>
@@ -2723,10 +2751,10 @@ export default function ConspiracyGame() {
                       log.type === "danger"
                         ? "bg-red-900/10 border-red-500 text-red-300"
                         : log.type === "success"
-                        ? "bg-green-900/10 border-green-500 text-green-300"
-                        : log.type === "warning"
-                        ? "bg-yellow-900/10 border-yellow-500 text-yellow-300"
-                        : "bg-gray-800 border-gray-600 text-gray-400"
+                          ? "bg-green-900/10 border-green-500 text-green-300"
+                          : log.type === "warning"
+                            ? "bg-yellow-900/10 border-yellow-500 text-yellow-300"
+                            : "bg-gray-800 border-gray-600 text-gray-400"
                     }`}
                   >
                     {log.text}
