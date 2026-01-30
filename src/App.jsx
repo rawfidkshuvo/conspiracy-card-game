@@ -42,6 +42,7 @@ import {
   Trash2, // Added Trash icon
   Users,
   Copy,
+  Loader,
 } from "lucide-react";
 
 // --- Firebase Config & Init ---
@@ -1740,10 +1741,26 @@ export default function ConspiracyGame() {
 
   if (!user)
     return (
-      <div className="min-h-screen bg-gray-950 flex items-center justify-center text-white font-serif">
-        <div className="animate-pulse">Loading Archive...</div>
+      <div className="min-h-screen bg-zinc-950 flex items-center justify-center text-purple-500 animate-pulse">
+        Unfolding truths...
       </div>
     );
+
+  // RECONNECTING STATE
+  if (roomId && !gameState && !error) {
+    return (
+      <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center text-white p-4">
+        <FloatingBackground />
+        <div className="bg-zinc-900/80 backdrop-blur p-8 rounded-2xl border border-zinc-700 shadow-2xl flex flex-col items-center gap-4 animate-in fade-in zoom-in duration-300">
+          <Loader size={48} className="text-purple-500 animate-spin" />
+          <div className="text-center">
+            <h2 className="text-xl font-bold">Reconnecting...</h2>
+            <p className="text-zinc-400 text-sm">Resuming your session</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (view === "menu") {
     return (
