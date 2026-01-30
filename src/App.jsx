@@ -1769,7 +1769,7 @@ export default function ConspiracyGame() {
 
         {showRules && <RulesModal onClose={() => setShowRules(false)} />}
 
-        <div className="z-10 text-center mb-10 animate-in fade-in zoom-in duration-700">
+        <div className="z-10 text-center mb-10">
           <Eye
             size={64}
             className="text-purple-500 mx-auto mb-4 animate-bounce drop-shadow-[0_0_15px_rgba(168,85,247,0.5)]"
